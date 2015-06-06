@@ -4,6 +4,8 @@
       "name": "foobar",
       "host": "irc.foobar.net",
       "nick": "MyBot",
+      "userName": "bot",
+      "realName": "I am a bot",
       "channels": [
         "#foobar"
       ]

@@ -96,13 +96,12 @@ Bot.prototype = {
   },
 };
 
-var Connection = function(options) {
-  this.client = new irc.Client(options.host, options.nick, {
-    channels: options.channels,
-    autoConnect: false,
-  });
+var Connection = function(config) {
+  var copy = Object.create(config);
+  copy.autoConnect = false;
 
-  this.name = options.name;
+  this.client = new irc.Client(copy.host, copy.nick, copy);
+  this.name = copy.name;
   this.events = new events.EventEmitter;
   this.channels = {};
 
