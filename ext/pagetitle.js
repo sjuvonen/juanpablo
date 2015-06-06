@@ -26,16 +26,17 @@ var PageTitle = {
     return new Promise(function(resolve, reject) {
       PageTitle.net.download(url).then(function(response) {
         if ("content-type" in response.headers) {
-          var charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
-          charset = charset ? charset[1] : "UTF-8";
+          if (response.headers["content-type"].match("html")) {
+            var charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
+            charset = charset ? charset[1] : "UTF-8";
 
-          if (charset) {
-            var data = iconv.decode(response.data, charset);
-            var title = PageTitle.parseTitle(data);
-            return resolve("Title: " + title);
+            if (charset) {
+              var data = iconv.decode(response.data, charset);
+              var title = PageTitle.parseTitle(data);
+              return resolve("Title: " + title);
+            }
           }
         }
-        reject();
       });
     });
   },
