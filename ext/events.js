@@ -45,43 +45,6 @@ exports.initialize = function(bot) {
   });
 };
 
-exports.test = function(file) {
-  var events = new EventCache(file);
-
-  events.reload().then(function() {
-    var event = events.nextEvent;
-
-    if (!event) {
-      return resolve("No event info found!");
-    }
-
-    var date = moment.utc(event.date);
-    var diff = moment.duration(date.diff(new Date));
-    var timestamp = date.format("MMMM D, HH:mm UTC");
-    var display = [timestamp];
-
-    if (diff.hours() > 0 || diff.minutes() > 0) {
-      display.push(" (in");
-
-      if (diff.hours() > 0) {
-        display.push(util.format(" %d hours", diff.hours()));
-      }
-
-      if (diff.minutes() > 0) {
-        display.push(util.format(" %d minutes", diff.minutes()));
-      }
-
-      display.push(")");
-    }
-
-    display.unshift(event.title + ": ");
-
-    console.log(display.join(""));
-  }).catch(function(error) {
-    console.log("FAIL", error);
-  });
-};
-
 var EventCache = function(file) {
   this.file = file;
   this.events = [];
