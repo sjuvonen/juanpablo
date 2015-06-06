@@ -6,12 +6,12 @@ var net = require("../core/net");
 var util = require("util");
 
 exports.initialize = function(bot) {
-  try {
   var drivers = new Standings({
     net: net,
     mode: Parser.READ_DRIVERS,
     url: bot.config.standings.drivers
   });
+  
   var teams = new Standings({
     net: net,
     mode: Parser.READ_TEAMS,
@@ -36,10 +36,6 @@ exports.initialize = function(bot) {
       });
     });
   });
-
-  } catch (e) {
-    console.log(e);
-  }
 };
 
 var formatItem = function(item, i) {
