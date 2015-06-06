@@ -1,17 +1,15 @@
 {
-  "name": "sj-ircbot",
-  "description": "IRC Bot",
-  "version": "0.0.1",
+  "name": "juanpablo",
+  "description": "IRC bot with an interest towards Formula 1",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "entities": "^1.1.1",
-    "feedparser": "0.*",
     "htmlparser2": "^3.8.3",
     "ical.js": "^1.1.1",
     "iconv-lite": "^0.4.10",
     "irc": "0.*",
     "moment": "^2.10.3",
-    "promise": "^7.0.1",
-    "underscore": "1.*"
+    "promise": "^7.0.1"
   }
 }
