@@ -84,7 +84,6 @@ Manager.prototype = {
     if (command.name in this.commands) {
       throw "Cannot register a command that exists: " + command.name;
     }
-    console.log("HEY");
     this.commands[command.name] = command;
     this.events.emit("commands.register", command);
   },

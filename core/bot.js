@@ -1,6 +1,7 @@
 
 var events = require("events");
 var irc = require("irc");
+var Promise = require("promise");
 var util = require("util");
 
 var commands = require("./commands");
@@ -28,6 +29,18 @@ var Bot = function(config) {
 
   this.modules.events.on("modules.load", function(name, module) {
     console.log("LOAD MODULE", name);
+  });
+
+  var bot = this;
+
+  this.addCommand("commands", function() {
+    return new Promise(function(resolve, reject) {
+      var names = Object.keys(bot.commands.commands);
+      names.sort();
+
+      var message = "Available commands: " + names.join(", ");
+      resolve(message);
+    });
   });
 };
 
@@ -76,6 +89,7 @@ Bot.prototype = {
       bot.commands.execute(message.command, message.user, ["foo", "bar"]).then(function(result) {
         message.reply(result);
       }, function(error) {
+        error += " (see !commands)";
         message.reply(error);
       });
     });
