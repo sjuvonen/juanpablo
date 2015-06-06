@@ -179,8 +179,17 @@ Message.MESSAGE = 1;
 Message.COMMAND = 2;
 
 Message.prototype = {
-  reply: function(text) {
-    this.server.say(this.pm ? this.from : this.to, text);
+  reply: function(msg) {
+    if (typeof msg == "string") {
+      msg = [msg];
+    }
+
+    var message = this;
+    msg.forEach(function(text, i) {
+      setTimeout(function() {
+        message.server.say(message.pm ? message.from : message.to, text);
+      }, i * 500);
+    });
   }
 };
 

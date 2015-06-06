@@ -33,7 +33,10 @@ var PageTitle = {
             if (charset) {
               var data = iconv.decode(response.data, charset);
               var title = PageTitle.parseTitle(data);
-              return resolve("Title: " + title);
+
+              if (title) {
+                return resolve("Title: " + title);
+              }
             }
           }
         }

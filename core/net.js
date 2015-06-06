@@ -28,6 +28,7 @@ module.exports = {
               headers: res.headers,
             });
           }
+          reject("unknown failure");
         });
       })
       .on('error', function(err) {
