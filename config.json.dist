@@ -1,0 +1,26 @@
+{
+  "servers": [
+    {
+      "name": "foobar",
+      "host": "irc.foobar.net",
+      "nick": "MyBot",
+      "channels": [
+        "#foobar"
+      ]
+    }
+  ],
+  "modules": [
+    "./ext/demo",
+    "./ext/pagetitle",
+    "./ext/events",
+    "./ext/commands",
+    "./ext/standings"
+  ],
+  "events": {
+    "file": "./data/season2015.ics"
+  },
+  "standings": {
+    "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2015-driver-standings.html",
+    "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2015-constructor-standings.html"
+  }
+}
