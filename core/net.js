@@ -20,10 +20,10 @@ module.exports = {
         res.on('end', function() {
           if (res.statusCode > 300 && res.statusCode <= 308) {
             if (res.headers.location) {
-              resolve(module.exports.download(res.headers.location));
+              return resolve(module.exports.download(res.headers.location));
             }
           } else {
-            resolve({
+            return resolve({
               data: Buffer.concat(chunks),
               headers: res.headers,
             });
