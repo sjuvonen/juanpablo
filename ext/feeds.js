@@ -74,11 +74,8 @@ FeedManager.prototype = {
     if (!this.queue.length) {
       return;
     }
-
     var article = this.queue.shift();
     var message = this.formatArticle(article);
-
-    console.log(message);
     this.bot.spam(message);
   },
   formatArticle: function(article) {
