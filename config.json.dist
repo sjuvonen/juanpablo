@@ -43,6 +43,14 @@
       {
         "name": "James Allen",
         "url": "http://www.jamesallenonf1.com/feed/"
+      },
+      {
+        "name": "F1 Technical",
+        "url": "http://www.f1technical.net/rss/news.xml"
+      },
+      {
+        "name": "F1 Technical",
+        "url": "http://www.f1technical.net/rss/articles.xml"
       }
     ]
   }

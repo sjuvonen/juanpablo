@@ -58,7 +58,6 @@ FeedManager.prototype = {
 
       manager.feeds.forEach(function(feed) {
         if (now - feed.updated >= manager.refreshTime) {
-          console.log("refresh feed", feed.name);
           feed.refresh();
         }
       });
@@ -114,12 +113,6 @@ var Feed = function(options) {
 };
 
 Feed.prototype = {
-  on: function() {
-    this.events.on.apply(this.events, arguments);
-  },
-  emit: function() {
-    this.events.emit.apply(this.events, arguments);
-  },
   refresh: function() {
     var feed = this;
     process.nextTick(function() {
@@ -145,14 +138,9 @@ Feed.prototype = {
       });
 
       parser.on("readable", function() {
-//         console.log("parse", feed.name);
         var item;
-
         while (item = this.read()) {
-//           console.log(item.title, item.pubDate);
           if (lastUpdate < item.pubDate) {
-            console.log(util.format("[%s] %s", feed.name, item.title));
-
             feed.emit("article", {
               source: feed.name,
               title: item.title,
@@ -163,7 +151,14 @@ Feed.prototype = {
         }
       });
     });
-  }
+  },
+
+  on: function() {
+    this.events.on.apply(this.events, arguments);
+  },
+  emit: function() {
+    this.events.emit.apply(this.events, arguments);
+  },
 };
 
 Object.defineProperties(Feed.prototype, {
