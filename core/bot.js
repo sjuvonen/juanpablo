@@ -9,12 +9,9 @@ var modules = require("./modules");
 var netUtils = require("./net");
 
 var Bot = function(config) {
-  console.log("Bot()");
-
-  this.events = new events.EventEmitter;
   this.config = config;
   this.servers = {};
-
+  this.events = new events.EventEmitter;
   this.commands = new commands.Manager;
 
   this.modules = new modules.Manager({
@@ -85,7 +82,7 @@ Bot.prototype = {
     });
 
     connection.on("command", function(message) {
-      bot.commands.execute(message.command, message.user, ["foo", "bar"]).then(function(result) {
+      bot.commands.execute(message.command, message.user, message.commandParams).then(function(result) {
         message.reply(result);
       }, function(error) {
         error += " (see !commands)";
@@ -108,7 +105,7 @@ Bot.prototype = {
     Object.keys(this.servers).forEach(function(name) {
       bot.servers[name].amsg(message);
     });
-  }
+  },
 
   on: function() {
     this.events.on.apply(this.events, arguments);

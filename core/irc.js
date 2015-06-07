@@ -185,6 +185,14 @@ Object.defineProperties(Message.prototype, {
       }
     }
   },
+  commandParams: {
+    get: function() {
+      if (this.type == Message.COMMAND) {
+        var parts = this.content.split(" ", 2);
+        return parts[2].trim().split(/\s+/);
+      }
+    }
+  },
   user: {
     get: function() {
       return new User(this.from, this.server);
