@@ -58,6 +58,7 @@ FeedManager.prototype = {
 
       manager.feeds.forEach(function(feed) {
         if (now - feed.updated >= manager.refreshTime) {
+          console.log("refresh feed", feed.name);
           feed.refresh();
         }
       });
@@ -120,41 +121,47 @@ Feed.prototype = {
     this.events.emit.apply(this.events, arguments);
   },
   refresh: function() {
-    var req = request(this.url);
-    var parser = new FeedParser({feedurl: this.url});
     var feed = this;
-    var lastUpdate = this.updated;
+    process.nextTick(function() {
+      var req = request(feed.url);
+      var parser = new FeedParser({feedurl: feed.url});
+      var lastUpdate = feed.updated;
 
-    this.updated = new Date;
+      feed.updated = new Date;
 
-    req.on("error", function(error) {
-      console.error("request error", error);
-    });
+      req.on("error", function(error) {
+        console.error("request error", error);
+      });
 
-    req.on("response", function(res) {
-      if (res.statusCode != 200) {
-        return this.emit("error", new Error("Bad status code: " + res.statusCode));
-      }
-      this.pipe(parser);
-    });
-
-    parser.on("error", function(error) {
-      console.error("parser error", error);
-    });
-
-    parser.on("readable", function() {
-      var item;
-
-      while (item = this.read()) {
-        if (lastUpdate < new Date(item.pubDate)) {
-          feed.emit("article", {
-            source: feed.name,
-            title: item.title,
-            date: new Date(item.pubDate),
-            link: item.link,
-          });
+      req.on("response", function(res) {
+        if (res.statusCode != 200) {
+          return this.emit("error", new Error("Bad status code: " + res.statusCode));
         }
-      }
+        this.pipe(parser);
+      });
+
+      parser.on("error", function(error) {
+        console.error("parser error", error);
+      });
+
+      parser.on("readable", function() {
+//         console.log("parse", feed.name);
+        var item;
+
+        while (item = this.read()) {
+//           console.log(item.title, item.pubDate);
+          if (lastUpdate < item.pubDate) {
+            console.log(util.format("[%s] %s", feed.name, item.title));
+
+            feed.emit("article", {
+              source: feed.name,
+              title: item.title,
+              date: item.pubDate,
+              link: item.link,
+            });
+          }
+        }
+      });
     });
   }
 };

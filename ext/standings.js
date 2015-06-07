@@ -23,6 +23,9 @@ exports.initialize = function(bot) {
     url: bot.config.standings.teams
   });
 
+  exports.drivers = drivers;
+  exports.teams = teams;
+
   bot.addCommand("points", function() {
     return new Promise(function(resolve, reject) {
       var reply = [];
@@ -53,13 +56,15 @@ var Standings = function(options) {
   this.url = options.url;
   this.updated = new Date(null);
   this._standings = null;
+
+  this.get();
 };
 
 Standings.prototype = {
-  get: function() {
+  get: function(force_cache) {
     var cache = this;
     return new Promise(function(resolve, reject) {
-      if (!cache.needsRefresh) {
+      if (!cache.needsRefresh || (force_cache && cache.standings)) {
         return resolve(cache.standings);
       }
 
@@ -87,6 +92,7 @@ Object.defineProperties(Standings.prototype, {
   },
   needsRefresh: {
     get: function() {
+//       console.log("updated", this.updated, (new Date) - this.updated);
       var interval = 300 * 1000;
       return (new Date) - this.updated >= interval;
     }

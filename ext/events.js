@@ -22,21 +22,31 @@ exports.initialize = function(bot) {
         return resolve("No event info found!");
       }
 
+      var now = new Date;
       var date = moment.utc(event.date);
       var diff = moment.duration(date.diff(new Date));
       var timestamp = date.format("MMMM D, HH:mm UTC");
       var display = [timestamp];
 
-      if (diff.hours() > 0 || diff.minutes() > 0) {
+      if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
         display.push(" (in");
 
-        if (diff.hours() > 0) {
+        if (diff.weeks() > 0) {
+          display.push(util.format(" %d weeks", diff.weeks()));
+        }
+
+        if (diff.days() > 0) {
+          display.push(util.format(" %d days", diff.days() % 7));
+        }
+
+        if (diff.hours()) {
           display.push(util.format(" %d hours", diff.hours()));
         }
 
-        if (diff.minutes() > 0) {
+        if (diff.minutes()) {
           display.push(util.format(" %d minutes", diff.minutes()));
         }
+
 
         display.push(")");
       }
