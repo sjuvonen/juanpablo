@@ -1,3 +1,8 @@
+/**
+ * Displays info about F1 race events.
+ *
+ * Events are read from an ICS file stored locally.
+ */
 
 var fs = require("fs");
 var ical = require("ical.js");

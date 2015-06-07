@@ -12,10 +12,10 @@
     }
   ],
   "modules": [
-    "./ext/demo",
     "./ext/pagetitle",
     "./ext/events",
-    "./ext/standings"
+    "./ext/standings",
+    "./ext/feeds"
   ],
   "events": {
     "file": "./data/season2015.ics"

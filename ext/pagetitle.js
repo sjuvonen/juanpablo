@@ -1,3 +1,7 @@
+/**
+ * Fetches page titles from links that are sent to channels.
+ */
+
 var entities = require("entities");
 var iconv = require("iconv-lite");
 var Promise = require("promise");

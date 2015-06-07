@@ -1,3 +1,8 @@
+/**
+ * Prints driver and team points.
+ *
+ * Standings are parsed from formula1.com.
+ */
 
 var entities = require("entities");
 var htmlparser = require("htmlparser2");
