@@ -82,7 +82,7 @@ FeedManager.prototype = {
     this.bot.spam(message);
   },
   formatArticle: function(article) {
-    return util.format("[%s] %s - %s", article.source.toUpperCase(), article.title, article.link);
+    return util.format("[%s] %s - %s", article.source.toUpperCase().replace(" ", ""), article.title, article.link);
   }
 };
 
