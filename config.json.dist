@@ -23,5 +23,27 @@
   "standings": {
     "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2015-driver-standings.html",
     "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2015-constructor-standings.html"
+  },
+  "feeds": {
+    "refresh": 600,
+    "publish": 60,
+    "sources": [
+      {
+        "name": "Autosport",
+        "url": "http://www.autosport.com/rss/f1news.xml"
+      },
+      {
+        "name": "F1Fanatic",
+        "url": "http://www.f1fanatic.co.uk/feed/"
+      },
+      {
+        "name": "BBC",
+        "url": "http://feeds.bbci.co.uk/sport/0/formula1/rss.xml"
+      },
+      {
+        "name": "James Allen",
+        "url": "http://www.jamesallenonf1.com/feed/"
+      }
+    ]
   }
 }
