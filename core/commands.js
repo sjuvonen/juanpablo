@@ -73,7 +73,6 @@ Manager.prototype = {
 
       var command = commands[name];
       var accept = function() {
-        console.log("command authed");
         command.execute(user, params).then(resolve, reject);
       };
 
@@ -82,7 +81,7 @@ Manager.prototype = {
   },
   register: function(command) {
     if (command.name in this.commands) {
-      throw "Cannot register a command that exists: " + command.name;
+      throw new Error("Cannot register a command that exists: " + command.name);
     }
     this.commands[command.name] = command;
     this.events.emit("commands.register", command);
