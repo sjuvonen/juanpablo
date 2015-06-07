@@ -5,6 +5,7 @@ var Promise = require("promise");
 var util = require("util");
 
 var commands = require("./commands");
+var ignores = require("./ignores");
 var modules = require("./modules");
 var netUtils = require("./net");
 var User = require("./user");
@@ -114,30 +115,37 @@ var Connection = function(config) {
   var copy = Object.create(config);
   copy.autoConnect = false;
 
+  this.ignores = new ignores.Manager;
   this.client = new irc.Client(copy.host, copy.nick, copy);
   this.name = copy.name;
   this.events = new events.EventEmitter;
   this.channels = {};
-
   this.userCache = new UserCache(this);
 
   var connection = this;
-  this.client.on("message", function(from, to, content) {
-    var message = new Message(from, to, content.trim(), connection);
+  this.client.on("message", function(from, to, content, raw) {
+    if (!connection.isIgnored(raw)) {
+      var message = new Message(from, to, content.trim(), connection);
 
-    switch (message.type) {
-      case Message.COMMAND:
-        connection.emit("command", message);
-        break;
+      switch (message.type) {
+        case Message.COMMAND:
+          connection.emit("command", message);
+          break;
 
-      default:
-        connection.emit("message", message);
-        break;
+        default:
+          connection.emit("message", message);
+          break;
+      }
+    } else {
+      console.log("IGNORED", raw.nick, raw.user, raw.host);
     }
   });
 };
 
 Connection.prototype = {
+  isIgnored: function(info) {
+    return this.ignores.isIgnored(info);
+  },
   connect: function() {
     console.log("CONNECT");
     this.client.connect();
