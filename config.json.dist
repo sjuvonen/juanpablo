@@ -15,7 +15,6 @@
     "./ext/demo",
     "./ext/pagetitle",
     "./ext/events",
-    "./ext/commands",
     "./ext/standings"
   ],
   "events": {
