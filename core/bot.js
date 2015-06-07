@@ -24,11 +24,11 @@ var Bot = function(config) {
     root: this.config.root,
   });
 
-  this.commands.events.on("commands.register", function(name, command) {
-    console.log("NEW COMMAND", name);
+  this.commands.events.on("commands.register", function(command) {
+    console.log("NEW COMMAND", command.name);
   });
 
-  this.modules.events.on("modules.load", function(name, module) {
+  this.modules.events.on("modules.load", function(name) {
     console.log("LOAD MODULE", name);
   });
 
@@ -57,9 +57,9 @@ Bot.prototype = {
     var loadNext = function() {
       if (modules.length) {
         var name = modules.shift();
-        moduleManager.load(name).then(loadNext, function() {
-          console.error("Failed to load module", name);
-          eventManager.emit("debug.log", "Failed to load module", name);
+        moduleManager.load(name).then(loadNext, function(error) {
+          console.error("Failed to load module", name, error);
+          eventManager.emit("debug.log", "Failed to load module", name, error);
           loadNext();
         });
       }
@@ -70,13 +70,13 @@ Bot.prototype = {
     loadNext();
 
     this.config.servers.forEach(function(server) {
-      var connection = this.addConnection(server);
-      this.servers[server.name] = connection;
+      this.addConnection(server);
     }, this);
   },
   addConnection: function(config) {
     var bot = this;
     var connection = new Connection(config);
+    this.servers[config.name] = connection;
 
     connection.connect(function() {
       console.log("connected", arguments.length);
@@ -109,18 +109,29 @@ Bot.prototype = {
   on: function() {
     this.events.on.apply(this.events, arguments);
   },
+
+  spam: function(message) {
+    var bot = this;
+    Object.keys(this.servers).forEach(function(name) {
+      bot.servers[name].amsg(message);
+    });
+  }
 };
 
 var Connection = function(config) {
   var copy = Object.create(config);
   copy.autoConnect = false;
 
+  this.config = config;
   this.ignores = new ignores.Manager;
-  this.client = new irc.Client(copy.host, copy.nick, copy);
-  this.name = copy.name;
+  this.client = new irc.Client(this.host, this.nick, copy);
   this.events = new events.EventEmitter;
-  this.channels = {};
+  this.channels = [];
   this.userCache = new UserCache(this);
+  this.messageQueue = new MessageQueue({
+    interval: 500,
+    client: this.client,
+  });
 
   var connection = this;
   this.client.on("message", function(from, to, content, raw) {
@@ -140,6 +151,23 @@ var Connection = function(config) {
       console.log("IGNORED", raw.nick, raw.user, raw.host);
     }
   });
+
+  this.client.on("join", function(channel, nick, raw) {
+    if (nick == connection.nick) {
+      console.log("Joined", channel);
+      connection.channels.push(channel);
+    }
+  });
+
+  this.client.on("kick", function(channel, nick, by, reason, raw) {
+    if (nick == connection.nick) {
+      console.warn("Kicked from", channel);
+      var i = connection.channels.indexOf(channel);
+      if (i >= 0) {
+        connection.channels.splice(i, 1);
+      }
+    }
+  });
 };
 
 Connection.prototype = {
@@ -147,23 +175,30 @@ Connection.prototype = {
     return this.ignores.isIgnored(info);
   },
   connect: function() {
-    console.log("CONNECT");
-    this.client.connect();
+    var connection = this;
+    this.client.connect(5, function(raw) {
+      console.log(util.format("CONNECTED TO %s AS %s", raw.server, raw.args[0]));
+    });
   },
   login: function(name, password) {
 
   },
   join: function(channel, password) {
-
+    if (password) {
+      channel += " " + password;
+    }
+    var client = this.client;
+    return new Promise(function(resolve, reject) {
+      client.join(channel, function() {
+        resolve();
+      });
+    });
   },
   part: function(channel) {
 
   },
   say: function(to, text) {
-    this.client.say.apply(this.client, arguments);
-  },
-  send: function() {
-    this.client.send.apply(this.client, arguments);
+    this.messageQueue.push({to: to, content: text});
   },
   whois: function(nick, callback) {
     console.log("WHOIS", nick);
@@ -186,8 +221,39 @@ Connection.prototype = {
   },
   emit: function() {
     return this.events.emit.apply(this.events, arguments);
-  }
+  },
+  amsg: function(message) {
+    console.log("AMGS TO", this.channels.join(","));
+
+    var connection = this;
+    this.channels.forEach(function(channel) {
+      connection.say(channel, message);
+    });
+  },
 };
+
+Object.defineProperties(Connection.prototype, {
+  id: {
+    get: function() {
+      return this.config.name;
+    }
+  },
+  nick: {
+    get: function() {
+      return this.config.nick;
+    }
+  },
+  host: {
+    get: function() {
+      return this.config.host;
+    }
+  },
+  user: {
+    get: function() {
+      return this.config.user;
+    }
+  },
+});
 
 var Message = function(from, to, content, server) {
   this.from = from;
@@ -206,10 +272,9 @@ Message.prototype = {
     }
 
     var message = this;
-    msg.forEach(function(text, i) {
-      setTimeout(function() {
-        message.server.say(message.pm ? message.from : message.to, text);
-      }, i * 500);
+
+    msg.forEach(function(row) {
+      message.server.say(message.pm ? message.from : message.to, row);
     });
   }
 };
@@ -270,4 +335,37 @@ module.exports = {
   Bot: Bot,
   Connection: Connection,
   Message: Message,
+};
+
+var MessageQueue = function(options) {
+  this.queue = [];
+  this.client = options.client;
+  this.delay = options.interval;
+  this.timer = 0;
+}
+
+MessageQueue.prototype = {
+  start: function() {
+    if (this.timer) {
+      throw new Error("Queue already active");
+    }
+
+    var queue = this;
+    this.timer = setInterval(function() {
+      queue.next();
+    }, this.delay);
+  },
+  push: function(message) {
+    this.queue.push(message);
+    if (!this.timer) {
+      this.start();
+    }
+  },
+  next: function() {
+    if (!this.queue.length) {
+      return false;
+    }
+    var message = this.queue.shift();
+    this.client.say(message.to, message.content);
+  }
 };
