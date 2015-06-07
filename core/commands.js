@@ -25,7 +25,7 @@ Command.prototype = {
           return resolve();
 
         case Command.ALLOW_AUTHED:
-          user.whois(function(info) {
+          user.whois().then(function(info) {
             if (info.account) {
               resolve();
             } else {
@@ -35,7 +35,7 @@ Command.prototype = {
           break;
 
         case Command.ALLOW_USERS:
-          user.whois(function(info) {
+          user.whois().then(function(info) {
             if (users.indexOf(info.user) >= 0) {
               resolve();
             } else {

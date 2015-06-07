@@ -1,4 +1,6 @@
 
+var Promise = require("promise");
+
 var User = function(nick, server) {
   this.nick = nick;
   this.server = server;
@@ -6,8 +8,11 @@ var User = function(nick, server) {
 };
 
 User.prototype = {
-  whois: function(callback) {
-    this.server.whois(this.nick, callback);
+  whois: function() {
+    var user = this;
+    return new Promise(function(resolve, reject) {
+      user.server.whois(user.nick).then(resolve, reject);
+    });
   }
 };
 

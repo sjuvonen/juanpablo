@@ -89,21 +89,24 @@ Connection.prototype = {
   say: function(to, text) {
     this.messageQueue.push({to: to, content: text});
   },
-  whois: function(nick, callback) {
-    console.log("WHOIS", nick);
-    var info = this.userCache.get(nick);
+  whois: function(nick) {
+    var server = this;
+    return new Promise(function(resolve, reject) {
+      console.log("WHOIS", nick);
+      var info = server.userCache.get(nick);
 
-    if (info) {
-      process.nextTick(function() {
-        callback(user);
-      });
-    } else {
-      var cache = this.userCache;
-      this.client.whois(nick, function(info) {
-        cache.set(nick, info);
-        callback(info);
-      });
-    }
+      if (info) {
+        process.nextTick(function() {
+          resolve(user);
+        });
+      } else {
+        var cache = server.userCache;
+        server.client.whois(nick, function(info) {
+          cache.set(nick, info);
+          resolve(info);
+        });
+      }
+    });
   },
   amsg: function(message) {
     this.channels.forEach(function(channel) {
@@ -180,7 +183,7 @@ Object.defineProperties(Message.prototype, {
   command: {
     get: function() {
       if (this.type == Message.COMMAND) {
-        var parts = this.content.split(" ", 2);
+        var parts = this.content.split(" ", 1);
         return parts[0].substring(1);
       }
     }
@@ -188,8 +191,7 @@ Object.defineProperties(Message.prototype, {
   commandParams: {
     get: function() {
       if (this.type == Message.COMMAND) {
-        var parts = this.content.split(" ", 2);
-        return parts[2].trim().split(/\s+/);
+        return this.content.split(/\s+/).slice(1);
       }
     }
   },
