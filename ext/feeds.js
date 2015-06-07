@@ -30,22 +30,20 @@ var FeedManager = function(bot, options) {
 };
 
 FeedManager.prototype = {
-  onError: function(error) {
-    console.error("FeedManager:", error);
-  },
   watch: function() {
     if (this.timers.refresh) {
-      console.warn("FeedManager already running");
+      console.error("FeedManager already running");
       return false;
     }
     var manager = this;
+    manager.refresh();
+
     this.timers.refresh = setInterval(function() {
       manager.refresh();
     }, this.refreshTime * 1000);
     this.timers.publish = setInterval(function() {
       manager.publishNext();
     }, this.publishTime * 1000);
-    manager.refresh();
   },
   stop: function() {
     if (this.timers.refresh) {
@@ -79,7 +77,10 @@ FeedManager.prototype = {
     this.bot.spam(message);
   },
   formatArticle: function(article) {
-    return util.format("[%s] %s - %s", article.source.toUpperCase().replace(" ", ""), article.title, article.link);
+    return util.format("[%s] %s - %s",
+      article.source.toUpperCase().replace(" ", ""),
+      article.title,
+      article.link);
   }
 };
 
