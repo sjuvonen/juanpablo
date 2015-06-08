@@ -89,8 +89,10 @@ Bot.prototype = {
       bot.commands.execute(message.command, message.user, message.commandParams).then(function(result) {
         message.reply(result);
       }, function(error) {
-        if (error instanceof Error && error.code == 123) {
-          error = error.toString() + " (see !help)";
+        if (typeof error == "object") {
+          if (error instanceof Error && error.code == 123) {
+            error.message += " (see !help)";
+          }
         }
         message.reply(error);
       });

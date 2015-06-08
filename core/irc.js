@@ -157,6 +157,9 @@ Message.COMMAND = 2;
 
 Message.prototype = {
   reply: function(msg) {
+    if (msg instanceof Error) {
+      msg = msg.toString();
+    }
     if (typeof msg == "string") {
       msg = [msg];
     }

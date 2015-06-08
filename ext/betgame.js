@@ -10,8 +10,8 @@ exports.initialize = function(bot) {
   var game = new Game(bot.database);
   game._initDatabase();
 
-  bot.addCommand("bet", commands.Command.ALLOW_AUTHED, function(user, params) {
-//   bot.addCommand("bet", function(user, params) {
+//   bot.addCommand("bet", commands.Command.ALLOW_AUTHED, function(user, params) {
+  bot.addCommand("bet", function(user, params) {
     return new Promise(function(resolve, reject) {
       if (params.length != 3) {
         return reject("Need three drivers to bet!");
@@ -60,7 +60,9 @@ Game.prototype = {
 
     return new Promise(function(resolve, reject) {
       game.parseDrivers(d1, d2, d3).then(function(names) {
-        game.saveBets(user, names);
+        game.saveBets(user, names).catch(function(error) {
+          console.error(error);
+        });
 
         var joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
         resolve(util.format("%s: %s [OK]", user.nick, joined));
@@ -106,38 +108,47 @@ Game.prototype = {
     var db = this.database;
     var event = events.nextQualifying;
 
+    console.log("save");
+
     return new Promise(function(resolve, reject) {
       user.whois().then(function(info) {
-//         if (!("account" in info)) {
-//           info.account = "DEMO";
-//         }
+        try {
+          if (!("account" in info)) {
+            info.account = "DEMO";
+          }
 
-        var sql = "INSERT INTO betgame_bets (round, user, d1, d2, d3) \
-            VALUES($round, $user, $d1, $d2, $d3)";
+          var sql = "INSERT INTO betgame_bets (round, user, d1, d2, d3) \
+              VALUES($round, $user, $d1, $d2, $d3)";
 
-        var params = {
-          $round: event.round,
-          $user: info.account,
-          $d1: names[0],
-          $d2: names[1],
-          $d3: names[2],
-        };
+          var params = {
+            $round: event.round,
+            $user: info.account,
+            $d1: names[0],
+            $d2: names[1],
+            $d3: names[2],
+          };
 
-        db.serialize(function() {
-          db.run(sql, params, function(err) {
-            if (!err) {
-              return;
-            }
-            if (err.errno != 19) {
-              console.warn("UNKNOWN DATABASE ERROR:", err);
-            }
+          db.serialize(function() {
+            db.run(sql, params, function(err) {
+              if (!err) {
+                return;
+              }
+              if (err.errno != 19) {
+                console.warn("UNKNOWN DATABASE ERROR:", err);
+              }
 
-            sql = "UPDATE betgame_bets SET d1 = $d1, d2 = $d2, d3 = $d3, time=CURRENT_TIMESTAMP \
-              WHERE round = $round AND user = $user";
+              sql = "UPDATE betgame_bets SET d1 = $d1, d2 = $d2, d3 = $d3, time=CURRENT_TIMESTAMP \
+                WHERE round = $round AND user = $user";
 
-            db.run(sql, params);
+              db.run(sql, params);
+            });
           });
-        });
+        } catch (e) {
+          console.error("huoh");
+          reject(e);
+        }
+      }).catch(function(e) {
+        console.log("another", e);
       });
     });
   },

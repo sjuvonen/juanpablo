@@ -71,7 +71,7 @@ Manager.prototype = {
       if (!(name in commands)) {
         var error = new Error(util.format("Unknown command '%s'", name));
         error.code = 123;
-        return reject(error);
+        throw error;
       }
 
       var command = commands[name];
