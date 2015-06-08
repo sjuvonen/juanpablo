@@ -16,3 +16,4 @@ Credits
 -------
 - Driver and constructors standings: f1.com
 - Season 2015 events: f1calendar.com
+- RSS feeds credited in config.json.dist
