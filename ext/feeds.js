@@ -78,7 +78,7 @@ FeedManager.prototype = {
   },
   formatArticle: function(article) {
     return util.format("[%s] %s - %s",
-      article.source.toUpperCase().replace(" ", ""),
+      article.source.toUpperCase().replace(/\W/, ""),
       article.title,
       article.link);
   }
