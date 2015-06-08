@@ -4,6 +4,7 @@ var Promise = require("promise");
 var util = require("util");
 
 var commands = require("./commands");
+var files = require("./files");
 var irc = require("./irc");
 var modules = require("./modules");
 var netUtils = require("./net");
@@ -19,6 +20,9 @@ var Bot = function(config) {
     root: this.config.root,
   });
 
+  this.config.files.root = this.config.root;
+  this.files = new files.Storage(this.config.files);
+
   this.commands.events.on("commands.register", function(command) {
     console.log("NEW COMMAND", command.name);
   });
@@ -29,12 +33,12 @@ var Bot = function(config) {
 
   var bot = this;
 
-  this.addCommand("commands", function() {
+  this.addCommand("help", function() {
     return new Promise(function(resolve, reject) {
       var names = Object.keys(bot.commands.commands);
       names.sort();
 
-      var message = "Available commands: " + names.join(", ");
+      var message = "Commands: " + names.join(", ");
       resolve(message);
     });
   });
@@ -85,7 +89,9 @@ Bot.prototype = {
       bot.commands.execute(message.command, message.user, message.commandParams).then(function(result) {
         message.reply(result);
       }, function(error) {
-        error += " (see !commands)";
+        if (error instanceof Error && error.code == 123) {
+          error = error.toString() + " (see !help)";
+        }
         message.reply(error);
       });
     });
@@ -111,6 +117,18 @@ Bot.prototype = {
     this.events.on.apply(this.events, arguments);
   },
 };
+
+Object.defineProperties(Bot.prototype, {
+  database: {
+    get: function() {
+      if (!("_db" in this)) {
+        var sqlite = require("sqlite3");
+        this._db = new sqlite.Database(this.files.toAbsolute("database.sqlite"));
+      }
+      return this._db;
+    }
+  }
+});
 
 module.exports = {
   Bot: Bot,

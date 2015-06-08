@@ -17,6 +17,9 @@
     "./ext/standings",
     "./ext/feeds"
   ],
+  "files": {
+    "storage": "./data"
+  },
   "events": {
     "file": "./data/season2015.ics"
   },

@@ -97,7 +97,7 @@ Connection.prototype = {
 
       if (info) {
         process.nextTick(function() {
-          resolve(user);
+          resolve(info);
         });
       } else {
         var cache = server.userCache;

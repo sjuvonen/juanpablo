@@ -140,6 +140,11 @@ Object.defineProperties(EventInfo.prototype, {
       return this.data.type;
     }
   },
+  round: {
+    get: function() {
+      return this.data.round;
+    }
+  },
 });
 
 var Parser = function() {
@@ -153,6 +158,7 @@ Parser.prototype = {
       var cal = new ical.Component(parsed);
       var items = cal.getAllSubcomponents("vevent");
       var events = [];
+      var round = 1;
 
       items.forEach(function(vevent, i) {
         process.nextTick(function() {
@@ -173,7 +179,12 @@ Parser.prototype = {
             start: event.startDate.toJSDate(),
             end: event.endDate.toJSDate(),
             type: type,
+            round: round,
           }));
+
+          if (type == EventInfo.RACE) {
+            round++;
+          }
 
           if (events.length == items.length) {
             resolve(events);

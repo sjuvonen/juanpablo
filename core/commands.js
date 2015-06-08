@@ -1,6 +1,7 @@
 
 var events = require("events");
 var Promise = require("promise");
+var util = require("util");
 
 var Command = function(name, perms, callback) {
   this.name = name;
@@ -68,7 +69,9 @@ Manager.prototype = {
 
     return new Promise(function(resolve, reject) {
       if (!(name in commands)) {
-        return reject("Unknown command: " + name);
+        var error = new Error(util.format("Unknown command '%s'", name));
+        error.code = 123;
+        return reject(error);
       }
 
       var command = commands[name];
