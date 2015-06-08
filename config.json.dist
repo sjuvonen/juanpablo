@@ -15,7 +15,8 @@
     "./ext/pagetitle",
     "./ext/events",
     "./ext/standings",
-    "./ext/feeds"
+    "./ext/feeds",
+    "./ext/betgame"
   ],
   "files": {
     "storage": "./data"
