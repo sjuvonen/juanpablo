@@ -4,7 +4,7 @@ IRC bot with an interest towards Formula 1.
 
 Configuration
 -------------
-- Run *npm install* to install dependencies define in *package.json*.
+- Run *npm install* to install dependencies defined in *package.json*.
 - Copy *config.json.dist* to *config.json* and change settings to suit your needs.
 - Make sure folder *data* is writable to the bot as it is used for storing data files.
 
