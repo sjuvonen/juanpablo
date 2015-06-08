@@ -2,6 +2,10 @@ JuanPablo
 =========
 IRC bot with an interest towards Formula 1.
 
+Documentation
+-------------
+There will be docs soon?
+
 Configuration
 -------------
 - Run *npm install* to install dependencies defined in *package.json*.
