@@ -11,7 +11,7 @@ var Promise = require("promise");
 var util = require("util");
 
 exports.initialize = function(bot) {
-  var events = new EventCache(bot.config.events.file);
+  var events = exports.events = new EventCache(bot.config.events.file);
   events.reload();
 
   bot.addCommand("next", function() {
@@ -47,15 +47,11 @@ exports.initialize = function(bot) {
           display.push(util.format(" %d minutes", diff.minutes()));
         }
 
-
         display.push(")");
       }
 
       display.unshift(event.title + ": ");
-
-      var message = display.join("");
-
-      resolve(message);
+      resolve(display.join(""));
     });
   });
 };
@@ -83,19 +79,35 @@ EventCache.prototype = {
         });
       });
     });
+  },
+  _next: function(type) {
+    var now = new Date;
+
+    for (var i = 0; i < this.events.length; i++) {
+      var event = this.events[i];
+      if (event.date >= now) {
+        if (!type || event.type == type) {
+          return event;
+        }
+      }
+    }
   }
 };
 
 Object.defineProperties(EventCache.prototype, {
   nextEvent: {
     get: function() {
-      var now = new Date;
-
-      for (var i = 0; i < this.events.length; i++) {
-        if (this.events[i].date >= now) {
-          return this.events[i];
-        }
-      }
+      return this._next();
+    }
+  },
+  nextRace: {
+    get: function() {
+      return this._next(EventInfo.RACE);
+    }
+  },
+  nextQualifying: {
+    get: function() {
+      return this._next(EventInfo.QUALIFYING);
     }
   },
 });
@@ -105,7 +117,7 @@ var EventInfo = function(data) {
 };
 
 EventInfo.PRACTISE = 1;
-EventInfo.QUALI = 2;
+EventInfo.QUALIFYING = 2;
 EventInfo.RACE = 3;
 
 EventInfo.prototype = {
@@ -122,7 +134,12 @@ Object.defineProperties(EventInfo.prototype, {
     get: function() {
       return this.data.title;
     }
-  }
+  },
+  type: {
+    get: function() {
+      return this.data.type;
+    }
+  },
 });
 
 var Parser = function() {
@@ -147,11 +164,15 @@ Parser.prototype = {
             title = parsed[1] + ", " + parsed[2];
           }
 
+          var type = title.match(/practi[cs]e/i) ? EventInfo.PRACTISE
+            : (title.match(/quali/i) ? EventInfo.QUALIFYING : EventInfo.RACE);
+
           events.push(new EventInfo({
             title: title,
             location: event.location,
             start: event.startDate.toJSDate(),
             end: event.endDate.toJSDate(),
+            type: type,
           }));
 
           if (events.length == items.length) {
