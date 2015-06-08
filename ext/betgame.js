@@ -164,7 +164,7 @@ Object.defineProperties(Game.prototype, {
     get: function() {
       var event = events.nextQualifying;
       if (event) {
-        return moment(event.date).subtract(5, "days").subtract(12, "hours").toDate();
+        return moment.utc(event.date).subtract(5, "days").hour(0).toDate();
       }
       return new Date(null);
     }
