@@ -144,9 +144,7 @@ Game.prototype = {
           console.error("huoh");
           reject(e);
         }
-      }).catch(function(e) {
-        console.log("another", e);
-      });
+      }, reject);
     });
   },
 };
