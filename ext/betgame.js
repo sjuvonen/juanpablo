@@ -186,13 +186,12 @@ Game.prototype = {
 
     var notifyLastChance = function() {
       game.events.emit("betWindowLastChance");
-      
+
       var nextDay = 24 * 3600 * 1000;
       setTimeout(initNotifyLastChance, nextDay);
     };
 
     var initNotifyLastChance = function() {
-      console.log("INIT");
       var qualiDelta = moment(game.races.nextQualifying.date)
         .subtract(30, "minutes")
         .diff(new Date);
