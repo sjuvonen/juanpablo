@@ -157,7 +157,7 @@ Game.prototype = {
 Object.defineProperties(Game.prototype, {
   betsAllowed: {
     get: function() {
-      this.betsOpen > new Date;
+      return this.betsOpen < new Date;
     }
   },
   betsOpen: {
@@ -166,7 +166,7 @@ Object.defineProperties(Game.prototype, {
       if (event) {
         return moment.utc(event.date).subtract(5, "days").hour(0).toDate();
       }
-      return new Date(null);
+      return null;
     }
   }
 });
