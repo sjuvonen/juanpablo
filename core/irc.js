@@ -92,7 +92,6 @@ Connection.prototype = {
   whois: function(nick) {
     var server = this;
     return new Promise(function(resolve, reject) {
-      console.log("WHOIS", nick);
       var info = server.userCache.get(nick);
 
       if (info) {
