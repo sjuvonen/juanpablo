@@ -44,6 +44,10 @@ exports.initialize = function(bot) {
   game.events.on("notifyBetWindow", function() {
     bot.spam("Hello everybody! Remember to !bet for race podium before qualifying starts!");
   });
+
+  game.events.on("betWindowLastChance", function() {
+    bot.spam("Attention! Don't forget to !bet for race podium before qualifying starts!");
+  });
 };
 
 var Game = function(database, drivers, races) {
@@ -172,14 +176,32 @@ Game.prototype = {
     }
 
     var hrs3 = 180 * 60 * 1000;
-
     var game = this;
+
     this.timers.betsWindow = setInterval(function() {
       if (game.betsOpen) {
         game.events.emit("notifyBetWindow");
       }
     }, hrs3);
-  }
+
+    var notifyLastChance = function() {
+      game.events.emit("betWindowLastChance");
+      
+      var nextDay = 24 * 3600 * 1000;
+      setTimeout(initNotifyLastChance, nextDay);
+    };
+
+    var initNotifyLastChance = function() {
+      console.log("INIT");
+      var qualiDelta = moment(game.races.nextQualifying.date)
+        .subtract(30, "minutes")
+        .diff(new Date);
+
+        setTimeout(notifyLastChance, qualiDelta);
+    };
+
+    setTimeout(initNotifyLastChance, 10000);
+  },
 };
 
 Object.defineProperties(Game.prototype, {
