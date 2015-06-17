@@ -10,8 +10,7 @@ exports.initialize = function(bot) {
   var game = new Game(bot.database);
   game._initDatabase();
 
-//   bot.addCommand("bet", commands.Command.ALLOW_AUTHED, function(user, params) {
-  bot.addCommand("bet", function(user, params) {
+  bot.addCommand("bet", commands.Command.ALLOW_AUTHED, function(user, params) {
     return new Promise(function(resolve, reject) {
       if (params.length != 3) {
         return reject("Need three drivers to bet!");
@@ -108,13 +107,11 @@ Game.prototype = {
     var db = this.database;
     var event = events.nextQualifying;
 
-    console.log("save");
-
     return new Promise(function(resolve, reject) {
       user.whois().then(function(info) {
         try {
           if (!("account" in info)) {
-            info.account = "DEMO";
+//             info.account = "DEMO";
           }
 
           var sql = "INSERT INTO betgame_bets (round, user, d1, d2, d3) \
