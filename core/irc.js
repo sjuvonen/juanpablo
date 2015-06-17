@@ -215,7 +215,7 @@ UserCache.prototype = {
     var info = this.users[nick.toLowerCase()];
 
     if (info) {
-      if ((Date.now() - this.users[nick].timestamp) < (this.decay * 1000)) {
+      if ((Date.now() - info.timestamp) < (this.decay * 1000)) {
         return info;
       } else {
         this.remove(nick);
