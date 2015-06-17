@@ -1,16 +1,22 @@
 
+var events = require("events");
 var moment = require("moment");
 var util = require("util");
 
 var commands = require("../core/commands");
-var drivers = require("./standings").drivers;
-var events = require("./events").events;
 
 exports.initialize = function(bot) {
-  var game = new Game(bot.database);
+  var drivers = require("./standings").drivers;
+  var races = require("./events").events;
+
+  var game = new Game(bot.database, drivers, races);
   game._initDatabase();
 
-  bot.addCommand("bet", commands.Command.ALLOW_AUTHED, function(user, params) {
+  var perms = bot.config.debug
+    ? commands.Command.ALLOW_ALL
+    : commands.Command.ALLOW_AUTHED;
+
+  bot.addCommand("bet", perms, function(user, params) {
     return new Promise(function(resolve, reject) {
       if (params.length != 3) {
         return reject("Need three drivers to bet!");
@@ -32,10 +38,22 @@ exports.initialize = function(bot) {
       }, reject);
     });
   });
+
+  game.watchBetWindow();
+
+  game.events.on("notifyBetWindow", function() {
+    bot.spam("Hello everybody! Remember to !bet for race podium before qualifying starts!");
+  });
 };
 
-var Game = function(database) {
+var Game = function(database, drivers, races) {
   this.database = database;
+  this.drivers = drivers;
+  this.races = races;
+  this.events = new events.EventEmitter;
+  this.timers = {
+    betWindow: 0,
+  };
 };
 
 Game.prototype = {
@@ -73,6 +91,7 @@ Game.prototype = {
       return name.toLowerCase();
     });
 
+    var drivers = this.drivers;
     return new Promise(function(resolve, reject) {
       drivers.get(true).then(function(data) {
         var names = [null, null, null];
@@ -105,7 +124,7 @@ Game.prototype = {
   saveBets: function(user, names) {
     var game = this;
     var db = this.database;
-    var event = events.nextQualifying;
+    var event = this.races.nextQualifying;
 
     return new Promise(function(resolve, reject) {
       user.whois().then(function(info) {
@@ -147,6 +166,20 @@ Game.prototype = {
       }, reject);
     });
   },
+  watchBetWindow: function() {
+    if (this.timers.betWindow) {
+      return;
+    }
+
+    var hrs3 = 180 * 60 * 1000;
+
+    var game = this;
+    this.timers.betsWindow = setInterval(function() {
+      if (game.betsOpen) {
+        game.events.emit("notifyBetWindow");
+      }
+    }, hrs3);
+  }
 };
 
 Object.defineProperties(Game.prototype, {
@@ -157,7 +190,7 @@ Object.defineProperties(Game.prototype, {
   },
   betsOpen: {
     get: function() {
-      var event = events.nextQualifying;
+      var event = this.races.nextQualifying;
       if (event) {
         return moment.utc(event.date).subtract(5, "days").hour(0).toDate();
       }
