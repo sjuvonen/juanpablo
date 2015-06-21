@@ -81,7 +81,7 @@ exports.initialize = function(bot) {
           });
         });
       });
-    }, 1000 * 15);
+    }, 1000 * 60 * 15);
     // CALCULATE SCORES
   });
 };
