@@ -258,13 +258,11 @@ PointsCalculator.prototype = {
     var calc = this;
     return new Promise(function(resolve) {
       process.nextTick(function() {
-        var points = bets.map(function(row, i) {
-          return {
-            user: row.user,
-            nick: row.nick,
-            points: calc.scores(row),
-          };
-        });
+        var points = bets.map((row, i) => ({
+          user: row.user,
+          nick: row.nick,
+          points: calc.scores(row),
+        }));
 
         points.sort(function(a, b) {
           return b.points - a.points;
