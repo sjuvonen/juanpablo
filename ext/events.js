@@ -14,9 +14,7 @@ exports.initialize = function(bot) {
   var events = new EventCache(bot.events, bot.config.events.file);
   bot.shared.events = events;
   
-  console.log("RELOAD");
   events.reload().then(function() {
-    console.log("WATCH");
     events.watch();
   });
 

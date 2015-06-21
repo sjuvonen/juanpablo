@@ -262,7 +262,6 @@ PointsCalculator.prototype = {
           nick: row.nick,
           points: calc.scores(row),
         }));
-
         points.sort((a, b) => b.points - a.points);
         resolve(points);
       });
