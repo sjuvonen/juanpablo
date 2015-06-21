@@ -263,10 +263,7 @@ PointsCalculator.prototype = {
           points: calc.scores(row),
         }));
 
-        points.sort(function(a, b) {
-          return b.points - a.points;
-        });
-
+        points.sort((a, b) => b.points - a.points);
         resolve(points);
       });
     });
