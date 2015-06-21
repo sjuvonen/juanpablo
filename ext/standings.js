@@ -23,8 +23,8 @@ exports.initialize = function(bot) {
     url: bot.config.standings.teams
   });
 
-  exports.drivers = drivers;
-  exports.teams = teams;
+  bot.shared.drivers = drivers;
+  bot.shared.teams = teams;
 
   bot.addCommand("points", function() {
     return new Promise(function(resolve, reject) {
@@ -92,7 +92,6 @@ Object.defineProperties(Standings.prototype, {
   },
   needsRefresh: {
     get: function() {
-//       console.log("updated", this.updated, (new Date) - this.updated);
       var interval = 300 * 1000;
       return (new Date) - this.updated >= interval;
     }

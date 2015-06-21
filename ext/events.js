@@ -11,8 +11,14 @@ var Promise = require("promise");
 var util = require("util");
 
 exports.initialize = function(bot) {
-  var events = exports.events = new EventCache(bot.config.events.file);
-  events.reload();
+  var events = new EventCache(bot.events, bot.config.events.file);
+  bot.shared.events = events;
+  
+  console.log("RELOAD");
+  events.reload().then(function() {
+    console.log("WATCH");
+    events.watch();
+  });
 
   bot.addCommand("next", function() {
     return new Promise(function(resolve, reject) {
@@ -56,26 +62,45 @@ exports.initialize = function(bot) {
   });
 };
 
-var EventCache = function(file) {
+var EventCache = function(event_manager, file) {
+  this.events = event_manager;
   this.file = file;
-  this.events = [];
+  this.races = [];
+
+  this.timers = {
+    weekendStart: 0,
+  };
 };
 
 EventCache.prototype = {
+  watch: function() {
+    if (!this.timers.weekendStart) {
+      var race = this.nextRace;
+      var ref = moment.utc(race.date).subtract(2, "days").hours(0);
+      var diff = moment(ref).diff(new Date);
+
+      var cache = this;
+
+      this.timers.weekendStart = setTimeout(function() {
+        cache.events.emit("race.weekend.begin");
+      }, diff);
+
+      this.timers.weekendEnd = setTimeout(function() {
+        cache.events.emit("race.weekend.end");
+      }, moment(race.date).add(1.5, "hours").diff(new Date));
+    }
+  },
   reload: function() {
     var cache = this;
     return new Promise(function(resolve, reject) {
-
       fs.readFile(cache.file, function(err, data) {
         if (err) {
           throw err;
         }
 
-        (new Parser).parse(data.toString()).then(function(events) {
-          cache.events = events;
+        (new Parser).parse(data.toString()).then(function(races) {
+          cache.races = races;
           resolve();
-        }).catch(function(error) {
-          reject();
         });
       });
     });
@@ -83,8 +108,8 @@ EventCache.prototype = {
   _next: function(type) {
     var now = new Date;
 
-    for (var i = 0; i < this.events.length; i++) {
-      var event = this.events[i];
+    for (var i = 0; i < this.races.length; i++) {
+      var event = this.races[i];
       if (event.date >= now) {
         if (!type || event.type == type) {
           return event;

@@ -10,6 +10,7 @@ var modules = require("./modules");
 var netUtils = require("./net");
 
 var Bot = function(config) {
+  this.shared = {};
   this.config = config;
   this.servers = {};
   this.events = new events.EventEmitter;
@@ -61,9 +62,9 @@ Bot.prototype = {
           eventManager.emit("debug.log", "Failed to load module", name, error);
           loadNext();
         });
+      } else {
+        eventManager.emit("modules.ready");
       }
-
-      eventManager.emit("modules.ready");
     };
 
     loadNext();
