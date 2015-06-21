@@ -20,8 +20,13 @@ exports.initialize = function(bot) {
 
   bot.addCommand("bet", perms, function(user, params) {
     return new Promise(function(resolve, reject) {
+      if (!game.betsAllowed) {
+        var datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
+        throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
+      }
+
       if (params.length != 3) {
-        return reject("Need three drivers to bet!");
+        throw new Error("Need three names to bet");
       }
 
       params.forEach(function(name) {
@@ -29,11 +34,6 @@ exports.initialize = function(bot) {
           throw new Error("Name length has to be at least three characters");
         }
       });
-
-      if (!game.betsAllowed) {
-        var datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
-        throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
-      }
 
       game.bet.apply(game, [user].concat(params)).then(function(reply) {
         resolve(reply);
