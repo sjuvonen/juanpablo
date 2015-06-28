@@ -336,8 +336,7 @@ Bets.prototype = {
 
       if (user) {
         sql += " AND user = $user";
-        // params.$user = user.account;
-        params.$user = "Verge";
+        params.$user = user.account;
       }
 
       db.all(sql, params, function(err, data) {
@@ -472,7 +471,7 @@ Game.prototype = {
   },
   userBets: function(user) {
     var round = this.races.nextRace.round;
-    return this.bets.user(user, 8);
+    return this.bets.user(user, round);
   },
   parseDrivers: function(d1, d2, d3) {
     var keys = Array.prototype.slice.apply(arguments).map(function(name) {
