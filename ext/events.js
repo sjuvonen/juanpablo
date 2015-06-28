@@ -13,7 +13,7 @@ var util = require("util");
 exports.initialize = function(bot) {
   var events = new EventCache(bot.events, bot.config.events.file);
   bot.shared.events = events;
-  
+
   events.reload().then(function() {
     events.watch();
   });
@@ -88,6 +88,16 @@ EventCache.prototype = {
       }, moment(race.date).add(1.5, "hours").diff(new Date));
     }
   },
+  race: function(num) {
+    for (var i = 0; i < this.races.length; i++) {
+      var event = this.races[i];
+      if (event.type == EventInfo.RACE) {
+        if (--num == 0) {
+          return event;
+        }
+      }
+    }
+  },
   reload: function() {
     var cache = this;
     return new Promise(function(resolve, reject) {
@@ -133,6 +143,22 @@ Object.defineProperties(EventCache.prototype, {
       return this._next(EventInfo.QUALIFYING);
     }
   },
+  lastRace: {
+    get: function() {
+      var now = new Date;
+      var race_i = 0;
+      for (var i = 0; i < this.races.length; i++) {
+        var event = this.races[i];
+        if (event.type == EventInfo.RACE) {
+          race_i++;
+          if (event.date > now) {
+            return this.race(race_i - 1);
+          }
+        }
+      }
+      return this.races[this.races.length-1];
+    }
+  }
 });
 
 var EventInfo = function(data) {

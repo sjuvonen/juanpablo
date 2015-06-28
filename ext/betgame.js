@@ -56,7 +56,37 @@ exports.initialize = function(bot) {
 
   bot.addCommand("top", perms, function(user, params) {
     return new Promise(function(resolve, reject) {
+      if (params.length) {
+        if (params[0] == "last") {
+          params[0] = races.lastRace.round;
+        }
+        var race = races.race(params[0]);
 
+        if (!race) {
+          return resolve("Invalid round " + params[0]);
+        }
+
+        game.scores(params[0]).then(function(points) {
+          if (points.length) {
+            var line = points.map(function(row, i) {
+              return util.format("%s %d", row.nick, row.points);
+            }).join("; ");
+            resolve(util.format("Points for %s: %s", race.title, line));
+          } else {
+            resolve("No data for " + race.title);
+          }
+        });
+      } else {
+        game.scores().then(function(points) {
+          var line = points.map(function(row, i) {
+            return util.format("%s %d", row.nick, row.points);
+          }).join("; ");
+          var race = races.race(points[0].round);
+          resolve(util.format("Points after %s: %s", race.title, line));
+        });
+      }
+    }, function(error) {
+      console.error("ERROR", error);
     });
   });
 
@@ -348,17 +378,45 @@ Bets.prototype = {
     });
   },
   user: function(user, round) {
-    var game = this;
+    var bets = this;
     return new Promise(function(resolve) {
       user.whois().then(function(info) {
-        game.round(round, info).then(function(data) {
+        bets.round(round, info).then(function(data) {
           resolve(data[0]);
         });
       });
     });
   },
+  scores: function(round) {
+    var db = this.database;
+    return new Promise(function(resolve) {
+      var sql = "\
+        SELECT MAX(round) round, \
+          SUM(points) points, \
+          user, \
+          nick \
+        FROM betgame_points \
+        WHERE season = $season \
+        %s \
+        GROUP BY user \
+        ORDER BY points DESC";
+      var params = {$season: (new Date).getUTCFullYear()};
+      if (round) {
+        params.$round = parseInt(round);
+        sql = util.format(sql, " AND round = $round");
+      } else {
+        sql = util.format(sql, "");
+      }
+      db.all(sql, params, function(err, points) {
+        if (err) {
+          console.log(err);
+          throw err;
+        }
+        resolve(points);
+      });
+    });
+  },
   save: function(round, user, names) {
-    var game = this;
     var db = this.database;
 
     return new Promise(function(resolve) {
@@ -472,6 +530,9 @@ Game.prototype = {
   userBets: function(user) {
     var round = this.races.nextRace.round;
     return this.bets.user(user, round);
+  },
+  scores: function(round) {
+    return this.bets.scores.apply(this.bets, arguments);
   },
   parseDrivers: function(d1, d2, d3) {
     var keys = Array.prototype.slice.apply(arguments).map(function(name) {
