@@ -205,7 +205,7 @@ Object.defineProperties(Message.prototype, {
 });
 
 var UserCache = function(server) {
-  this.decay = 60;
+  this.decay = 30;
   this.users = {};
 };
 
