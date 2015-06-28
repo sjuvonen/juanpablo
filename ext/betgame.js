@@ -71,7 +71,10 @@ exports.initialize = function(bot) {
             var line = points.map(function(row, i) {
               return util.format("%s %d", row.nick, row.points);
             }).join("; ");
-            resolve(util.format("Points for %s: %s", race.title, line));
+            resolve({
+              message: util.format("Points for %s: %s", race.title, line),
+              method: "notice",
+            });
           } else {
             resolve("No data for " + race.title);
           }
@@ -82,7 +85,10 @@ exports.initialize = function(bot) {
             return util.format("%s %d", row.nick, row.points);
           }).join("; ");
           var race = races.race(points[0].round);
-          resolve(util.format("Points after %s: %s", race.title, line));
+          resolve({
+            message: util.format("Points after %s: %s", race.title, line),
+            method: "notice",
+          });
         });
       }
     }, function(error) {

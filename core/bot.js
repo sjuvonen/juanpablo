@@ -88,12 +88,33 @@ Bot.prototype = {
 
     connection.on("command", function(message) {
       bot.commands.execute(message.command, message.user, message.commandParams).then(function(result) {
-        message.reply(result);
+        /*
+         * Resolved value can be one of the following:
+         *  - Error (exception)
+         *  - Array of strings
+         *  - Single string
+         *  - Special object that defines custom method for replying:
+         *    - message [again string or array of strings]
+         *    - method [say|notice]
+        */
+
+        var reply, method;
+
+        if (result instanceof Error) {
+          reply = result.toString();
+        } else if (typeof result == "string" || result instanceof Array) {
+          reply = result;
+        } else if (typeof result == "object") {
+          reply = result.message;
+          method = result.method;
+        }
+        message.reply(reply, method);
       }, function(error) {
         if (typeof error == "object") {
           if (error instanceof Error && error.code == 123) {
             error.message += " (see !help)";
           }
+          error = error.toString();
         }
         message.reply(error);
       });

@@ -83,11 +83,14 @@ Connection.prototype = {
       });
     });
   },
+  notice: function(to, text) {
+    this.messageQueue.push({to: to, content: text, method: "notice"});
+  },
   part: function(channel) {
 
   },
   say: function(to, text) {
-    this.messageQueue.push({to: to, content: text});
+    this.messageQueue.push({to: to, content: text, method: "say"});
   },
   whois: function(nick) {
     var server = this;
@@ -155,7 +158,7 @@ Message.MESSAGE = 1;
 Message.COMMAND = 2;
 
 Message.prototype = {
-  reply: function(msg) {
+  reply: function(msg, method) {
     if (msg instanceof Error) {
       msg = msg.toString();
     }
@@ -164,9 +167,10 @@ Message.prototype = {
     }
 
     var message = this;
+    var to = message.pm ? message.from : message.to;
 
     msg.forEach(function(row) {
-      message.server.say(message.pm ? message.from : message.to, row);
+      message.server[method || "say"].call(message.server, to, row);
     });
   }
 };
@@ -259,7 +263,7 @@ MessageQueue.prototype = {
       return false;
     }
     var message = this.queue.shift();
-    this.client.say(message.to, message.content);
+    this.client[message.method].call(this.client, message.to, message.content);
   }
 };
 
