@@ -20,24 +20,43 @@ exports.initialize = function(bot) {
 
   bot.addCommand("bet", perms, function(user, params) {
     return new Promise(function(resolve, reject) {
-      if (!game.betsAllowed) {
-        var datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
-        throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
-      }
+      if (params.length == 0) {
+        game.userBets(user).then(function(bets) {
+          if (!bets) {
+            return resolve("You have not placed any bets for this round");
+          }
+          var line = [bets.d1, bets.d2, bets.d3].map(function(name, i) {
+            return util.format("%d. %s", i+1, name);
+          }).join("; ");
 
-      if (params.length != 3) {
-        throw new Error("Need three names to bet");
-      }
-
-      params.forEach(function(name) {
-        if (name.length < 3) {
-          throw new Error("Name length has to be at least three characters");
+          resolve("Your bets for this round: " + line);
+        });
+      } else {
+        if (!game.betsAllowed) {
+          var datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
+          throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
         }
-      });
 
-      game.bet.apply(game, [user].concat(params)).then(function(reply) {
-        resolve(reply);
-      });
+        if (params.length != 3) {
+          throw new Error("Need three names to bet");
+        }
+
+        params.forEach(function(name) {
+          if (name.length < 3) {
+            throw new Error("Name length has to be at least three characters");
+          }
+        });
+
+        game.bet.apply(game, [user].concat(params)).then(function(reply) {
+          resolve(reply);
+        });
+      }
+    });
+  });
+
+  bot.addCommand("top", perms, function(user, params) {
+    return new Promise(function(resolve, reject) {
+
     });
   });
 
@@ -299,17 +318,43 @@ var Bets = function(database) {
 };
 
 Bets.prototype = {
-  round: function(round) {
+  /**
+   * @param round Number of round to fetch
+   * @param user Auth info for user [optional
+   */
+  round: function(round, user) {
     var db = this.database;
     return new Promise(function(resolve) {
-      var sql = "SELECT user, nick, d1, d2, d3 FROM betgame_bets WHERE round = $round";
-      var params = {$round: round};
+      var sql = "\
+        SELECT user, nick, d1, d2, d3 \
+        FROM betgame_bets \
+        WHERE round = $round AND season = $season";
+      var params = {
+        $round: round,
+        $season: (new Date).getUTCFullYear(),
+      };
 
-      db.all(sql, {$round: round}, function(err, data) {
+      if (user) {
+        sql += " AND user = $user";
+        // params.$user = user.account;
+        params.$user = "Verge";
+      }
+
+      db.all(sql, params, function(err, data) {
         if (err) {
           throw new Error(err);
         }
         resolve(data);
+      });
+    });
+  },
+  user: function(user, round) {
+    var game = this;
+    return new Promise(function(resolve) {
+      user.whois().then(function(info) {
+        game.round(round, info).then(function(data) {
+          resolve(data[0]);
+        });
       });
     });
   },
@@ -319,10 +364,11 @@ Bets.prototype = {
 
     return new Promise(function(resolve) {
       user.whois().then(function(info) {
-        var sql = "INSERT INTO betgame_bets (round, user, nick, d1, d2, d3) \
-            VALUES ($round, $user, $nick, $d1, $d2, $d3)";
+        var sql = "INSERT INTO betgame_bets (season, round, user, nick, d1, d2, d3) \
+            VALUES ($season, $round, $user, $nick, $d1, $d2, $d3)";
 
         var params = {
+          $season: (new Date).getUTCFullYear(),
           $round: round,
           $user: info.account,
           $nick: info.nick,
@@ -366,6 +412,7 @@ Bets.prototype = {
       resolve();
     });
   },
+
 };
 
 var Game = function(database, drivers, races) {
@@ -386,6 +433,7 @@ Game.prototype = {
 
     db.serialize(function() {
       db.run("CREATE TABLE IF NOT EXISTS betgame_bets( \
+        season INT NOT NULL, \
         round INT NOT NULL, \
         user TEXT NOT NULL, \
         nick TEXT NOT NULL, \
@@ -397,6 +445,7 @@ Game.prototype = {
       )");
 
       db.run("CREATE TABLE IF NOT EXISTS betgame_points( \
+        season INT NOT NULL, \
         round INT NOT NULL, \
         user TEXT NOT NULL, \
         nick TEXT NOT NULL, \
@@ -417,6 +466,10 @@ Game.prototype = {
         });
       });
     });
+  },
+  userBets: function(user) {
+    var round = this.races.nextRace.round;
+    return this.bets.user(user, 8);
   },
   parseDrivers: function(d1, d2, d3) {
     var keys = Array.prototype.slice.apply(arguments).map(function(name) {
