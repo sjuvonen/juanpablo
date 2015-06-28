@@ -167,7 +167,7 @@ Message.prototype = {
     }
 
     var message = this;
-    var to = message.pm ? message.from : message.to;
+    var to = (message.pm || method != "say") ? message.from : message.to;
 
     msg.forEach(function(row) {
       message.server[method || "say"].call(message.server, to, row);
