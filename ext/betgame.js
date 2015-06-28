@@ -386,9 +386,12 @@ Bets.prototype = {
               throw err;
             }
 
-            sql = "UPDATE betgame_bets SET d1 = $d1, d2 = $d2, d3 = $d3, time=CURRENT_TIMESTAMP \
-              WHERE round = $round AND user = $user";
-
+            sql = "\
+              UPDATE betgame_bets \
+              SET d1 = $d1, d2 = $d2, d3 = $d3, time=CURRENT_TIMESTAMP \
+              WHERE season = $season \
+                AND round = $round \
+                AND user = $user";
             db.run(sql, params);
           });
         });
@@ -441,7 +444,7 @@ Game.prototype = {
         d2 TEXT NOT NULL, \
         d3 TEXT NOT NULL, \
         time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
-        PRIMARY KEY(round, user) \
+        PRIMARY KEY(season, round, user) \
       )");
 
       db.run("CREATE TABLE IF NOT EXISTS betgame_points( \
@@ -450,7 +453,7 @@ Game.prototype = {
         user TEXT NOT NULL, \
         nick TEXT NOT NULL, \
         points INT NOT NULL, \
-        PRIMARY KEY(round, user) \
+        PRIMARY KEY(season, round, user) \
       )");
     });
   },
