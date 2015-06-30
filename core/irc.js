@@ -186,7 +186,7 @@ Object.defineProperties(Message.prototype, {
   },
   type: {
     get: function() {
-      return this.content[0] == "!" ? Message.COMMAND : Message.MESSAGE;
+      return this.content.match(/^!\w\w/) ? Message.COMMAND : Message.MESSAGE;
     }
   },
   command: {

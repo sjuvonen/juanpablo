@@ -48,7 +48,6 @@ exports.initialize = function(bot) {
         });
 
         game.bet.apply(game, [user].concat(params)).then(function(reply) {
-          console.log("BET OK", reply);
           resolve(reply);
         });
       }
@@ -416,7 +415,7 @@ Bets.prototype = {
       }
       db.all(sql, params, function(err, points) {
         if (err) {
-          console.log(err);
+          console.error(err);
           throw err;
         }
         resolve(points);
@@ -425,8 +424,6 @@ Bets.prototype = {
   },
   save: function(round, user, names) {
     var db = this.database;
-
-    console.log("SAVE BETS");
 
     return new Promise(function(resolve) {
       user.whois().then(function(info) {
@@ -531,11 +528,7 @@ Game.prototype = {
 
     return new Promise(function(resolve) {
       game.parseDrivers(d1, d2, d3).then(function(names) {
-        console.log("NAMES", names);
-
         game.bets.save(round, user, names).then(function() {
-
-
           var joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
           resolve(util.format("%s: %s [OK]", user.nick, joined));
         }, function(err) {
