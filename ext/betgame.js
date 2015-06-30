@@ -47,9 +47,7 @@ exports.initialize = function(bot) {
           }
         });
 
-        game.bet.apply(game, [user].concat(params)).then(function(reply) {
-          resolve(reply);
-        });
+        game.bet.apply(game, [user].concat(params)).then(resolve, reject);
       }
     });
   });
@@ -415,7 +413,6 @@ Bets.prototype = {
       }
       db.all(sql, params, function(err, points) {
         if (err) {
-          console.error(err);
           throw err;
         }
         resolve(points);
@@ -456,7 +453,6 @@ Bets.prototype = {
                 AND round = $round \
                 AND user = $user";
             db.run(sql, params);
-
             resolve(names);
           });
         });
@@ -526,15 +522,15 @@ Game.prototype = {
     var game = this;
     var round = this.races.nextQualifying.round;
 
-    return new Promise(function(resolve) {
+    return new Promise(function(resolve, reject) {
       game.parseDrivers(d1, d2, d3).then(function(names) {
         game.bets.save(round, user, names).then(function() {
           var joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
           resolve(util.format("%s: %s [OK]", user.nick, joined));
         }, function(err) {
-          console.error("err", err);
+          console.log("err", err);
         });
-      });
+      }).catch(reject);
     });
   },
   userBets: function(user) {
