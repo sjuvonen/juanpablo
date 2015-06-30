@@ -165,6 +165,9 @@ Message.prototype = {
     if (typeof msg == "string") {
       msg = [msg];
     }
+    if (!method) {
+      method = "say";
+    }
 
     var message = this;
     var to = (message.pm || method != "say") ? message.from : message.to;

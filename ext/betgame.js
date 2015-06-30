@@ -48,6 +48,7 @@ exports.initialize = function(bot) {
         });
 
         game.bet.apply(game, [user].concat(params)).then(function(reply) {
+          console.log("BET OK", reply);
           resolve(reply);
         });
       }
@@ -425,6 +426,8 @@ Bets.prototype = {
   save: function(round, user, names) {
     var db = this.database;
 
+    console.log("SAVE BETS");
+
     return new Promise(function(resolve) {
       user.whois().then(function(info) {
         var sql = "INSERT INTO betgame_bets (season, round, user, nick, d1, d2, d3) \
@@ -433,7 +436,7 @@ Bets.prototype = {
         var params = {
           $season: (new Date).getUTCFullYear(),
           $round: round,
-          $user: info.account,
+          $user: info.account || "DEMO",
           $nick: info.nick,
           $d1: names[0],
           $d2: names[1],
@@ -443,7 +446,7 @@ Bets.prototype = {
         db.serialize(function() {
           db.run(sql, params, function(err) {
             if (!err) {
-              return;
+              return resolve(names);
             }
             if (err.errno != 19) {
               throw err;
@@ -451,11 +454,13 @@ Bets.prototype = {
 
             sql = "\
               UPDATE betgame_bets \
-              SET d1 = $d1, d2 = $d2, d3 = $d3, time=CURRENT_TIMESTAMP \
+              SET d1 = $d1, d2 = $d2, d3 = $d3, nick = $nick, time=CURRENT_TIMESTAMP \
               WHERE season = $season \
                 AND round = $round \
                 AND user = $user";
             db.run(sql, params);
+
+            resolve(names);
           });
         });
       });
@@ -526,9 +531,15 @@ Game.prototype = {
 
     return new Promise(function(resolve) {
       game.parseDrivers(d1, d2, d3).then(function(names) {
-        game.bets.save(rounds, user, names).then(function() {
+        console.log("NAMES", names);
+
+        game.bets.save(round, user, names).then(function() {
+
+
           var joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
           resolve(util.format("%s: %s [OK]", user.nick, joined));
+        }, function(err) {
+          console.error("err", err);
         });
       });
     });
