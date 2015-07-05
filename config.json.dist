@@ -65,5 +65,9 @@
         "url": "http://www.grandprix247.com/feed/"
       }
     ]
+  },
+  "betgame": {
+    "results": "https://en.wikipedia.org/wiki/2015_Formula_One_season",
+    "baseurl": "https://en.wikipedia.org"
   }
 }
