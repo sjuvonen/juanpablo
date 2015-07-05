@@ -113,9 +113,6 @@ exports.initialize = function(bot) {
   bot.events.on("race.weekend.begin", function() {
     console.log("race.weekend.begin()");
 
-    var now = new Date;
-    var deadline = moment(races.nextQualifying.date);
-
     var notify = function() {
       bot.spam("Hello everybody! Remember to !bet for race podium before quali!");
     };
@@ -124,11 +121,13 @@ exports.initialize = function(bot) {
       bot.spam("Last chance to !bet for race podium! Qualifying in 30 minutes!");
     };
 
-    setTimeout(last_chance, deadline.subtract(30, "minutes").diff(now));
-    setTimeout(notify, deadline.subtract(1.5, "hours").diff(now));
-    setTimeout(notify, deadline.subtract(2.5, "hours").diff(now));
-    setTimeout(notify, deadline.subtract(9, "hours").diff(now));
-    setTimeout(notify, deadline.subtract(3, "hours").diff(now));
+    var deadline = moment(races.nextQualifying.date);
+
+    setTimeout(last_chance, deadline.subtract(30, "minutes").diff());
+    setTimeout(notify, deadline.subtract(1.5, "hours").diff());
+    setTimeout(notify, deadline.subtract(2.5, "hours").diff());
+    setTimeout(notify, deadline.subtract(9, "hours").diff());
+    setTimeout(notify, deadline.subtract(3, "hours").diff());
 
     notify();
   });
