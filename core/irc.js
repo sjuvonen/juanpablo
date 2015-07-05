@@ -44,7 +44,9 @@ var Connection = function(config) {
   this.client.on("join", function(channel, nick, raw) {
     if (nick == connection.nick) {
       console.log("Joined", channel);
-      connection.channels.push(channel);
+      if (connection.channels.indexOf(channel) == -1) {
+        connection.channels.push(channel);
+      }
     }
   });
 
@@ -56,6 +58,10 @@ var Connection = function(config) {
         connection.channels.splice(i, 1);
       }
     }
+  });
+
+  this.client.on("error", function(error) {
+    console.error("connection error", error);
   });
 };
 
