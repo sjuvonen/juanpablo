@@ -67,6 +67,7 @@ var EventCache = function(event_manager, file) {
 
   this.timers = {
     weekendStart: 0,
+    weekendEnd: 0,
   };
 };
 
@@ -75,9 +76,12 @@ EventCache.prototype = {
     if (!this.timers.weekendStart) {
       var race = this.nextRace;
       var ref = moment.utc(race.date).subtract(2, "days").hours(0);
-      var diff = moment(ref).diff(new Date);
-
+      var diff = moment(ref).diff();
       var cache = this;
+
+      this.timers.weekStart = setTimeout(function() {
+          cache.events.emit("race.week.begin");
+      }, moment(ref).startOf("isoweek").diff());
 
       this.timers.weekendStart = setTimeout(function() {
         cache.events.emit("race.weekend.begin");
@@ -85,7 +89,7 @@ EventCache.prototype = {
 
       this.timers.weekendEnd = setTimeout(function() {
         cache.events.emit("race.weekend.end");
-      }, moment(race.date).add(1.5, "hours").diff(new Date));
+      }, moment(race.date).add(1.5, "hours").diff());
     }
   },
   race: function(num) {

@@ -95,13 +95,26 @@ exports.initialize = function(bot) {
     });
   });
 
-  bot.events.on("race.weekend.start", function() {
-    console.log("race.weekend.start()");
+  bot.events.on("race.week.begin", function() {
+    console.log("race.week.begin()");
 
-    bot.spam("Hello everybody! Bet window is now open and bets are allowed until qualifying starts!");
+    var notify = function() {
+      bot.spam("Hello everybody! Bet window is now open and bets are allowed until qualifying starts!");
+    };
+
+    setTimeout(notify, 1000 * 60 * 6);
+    setTimeout(notify, 1000 * 60 * 10);
+    setTimeout(notify, 1000 * 60 * 16);
+    setTimeout(notify, 1000 * 60 * 20);
+
+    notify();
+  });
+
+  bot.events.on("race.weekend.begin", function() {
+    console.log("race.weekend.begin()");
 
     var now = new Date;
-    var deadline = races.nextQualifying.date;
+    var deadline = moment(races.nextQualifying.date);
 
     var notify = function() {
       bot.spam("Hello everybody! Remember to !bet for race podium before quali!");
@@ -116,6 +129,8 @@ exports.initialize = function(bot) {
     setTimeout(notify, deadline.subtract(2.5, "hours").diff(now));
     setTimeout(notify, deadline.subtract(9, "hours").diff(now));
     setTimeout(notify, deadline.subtract(3, "hours").diff(now));
+
+    notify();
   });
 
   bot.events.on("race.weekend.end", function() {
