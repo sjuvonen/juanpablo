@@ -11,7 +11,7 @@ exports.initialize = function(bot) {
   var drivers = bot.shared.drivers;
   var races = bot.shared.events;
 
-  var game = new Game(bot.database, drivers, races);
+  var game = new Game(bot.database, drivers, races, new RaceResults(bot.net, bot.config.betgame));
   game._initDatabase();
 
   var perms = bot.config.debug
@@ -58,6 +58,7 @@ exports.initialize = function(bot) {
         if (params[0] == "last") {
           params[0] = races.lastRace.round;
         }
+
         var race = races.race(params[0]);
 
         if (!race) {
@@ -78,7 +79,7 @@ exports.initialize = function(bot) {
           }
         });
       } else {
-        game.scores().then(function(points) {
+        game.topScores().then(function(points) {
           var line = points.map(function(row, i) {
             return util.format("%s %d", row.nick, row.points);
           }).join("; ");
@@ -95,6 +96,8 @@ exports.initialize = function(bot) {
   });
 
   bot.events.on("race.weekend.start", function() {
+    console.log("race.weekend.start()");
+
     bot.spam("Hello everybody! Bet window is now open and bets are allowed until qualifying starts!");
 
     var now = new Date;
@@ -116,31 +119,19 @@ exports.initialize = function(bot) {
   });
 
   bot.events.on("race.weekend.end", function() {
-    var round = races.nextRace.round - 1;
-    var iid = setInterval(function() {
-      var results = new RaceResults(bot.net, bot.config.betgame);
+    console.log("race.weekend.end()");
 
-      results.fetchRace(round).then(function(result) {
-        game.bets.round(round).then(function(bets) {
-          (new PointsCalculator(result)).process(bets).then(function(scores) {
-//             console.log("SCORES:", scores.map(o => o.nick + ": " + o.points).join("; "));
-            game.bets.saveScores(round, scores).then(function() {
-              clearInterval(iid);
-
-              bot.spam("Betting scores updated!");
-            }, function(err) {
-              console.log(err);
-            });
-          });
-        });
-      });
-    }, 1000 * 60 * 15);
+    game.updateScores().then(function() {
+      bot.spam(util.format("Scores updated for %s!", races.lastRace.title));
+    }, function(err) {
+      console.log("FETCH FAILED", err);
+    });
   });
 };
 
 var RaceResults = function(net, options) {
   this.net = net;
-  this.url = options.source;
+  this.url = options.results;
 
   this.sources = [];
   this.results = [];
@@ -171,9 +162,8 @@ RaceResults.prototype = {
             cache.results[i] = result;
             resolve(result);
           } else {
-            console.log("REJECT");
-            reject("FOO");
-            throw new Error("Failed to fetch results");
+            return reject(-1);
+            // throw new Error("Failed to fetch results");
           }
         });
       });
@@ -411,6 +401,7 @@ Bets.prototype = {
       } else {
         sql = util.format(sql, "");
       }
+
       db.all(sql, params, function(err, points) {
         if (err) {
           throw err;
@@ -464,11 +455,13 @@ Bets.prototype = {
     return new Promise(function(resolve) {
       db.run("DELETE FROM betgame_points WHERE round = $round", {$round: round});
 
-      var sql = "INSERT INTO betgame_points(round, user, nick, points) VALUES (?, ?, ?, ?)";
+      var season = (new Date).getUTCFullYear();
+
+      var sql = "INSERT INTO betgame_points(season, round, user, nick, points) VALUES (?, ?, ?, ?, ?)";
       var smt = db.prepare(sql);
 
       scores.forEach(function(row) {
-        smt.run(round, row.user, row.nick, row.points);
+        smt.run(season, round, row.user, row.nick, row.points);
       });
 
       smt.finalize();
@@ -479,10 +472,11 @@ Bets.prototype = {
 
 };
 
-var Game = function(database, drivers, races) {
+var Game = function(database, drivers, races, results) {
   this.database = database;
   this.drivers = drivers;
   this.races = races;
+  this.results = results;
   this.events = new events.EventEmitter;
   this.timers = {
     betWindow: 0,
@@ -539,6 +533,54 @@ Game.prototype = {
   },
   scores: function(round) {
     return this.bets.scores.apply(this.bets, arguments);
+  },
+  topScores: function() {
+    var game = this;
+
+    return new Promise(function(resolve) {
+      return game.scores().then(function(scores) {
+        var max_round = scores.reduce(((max, row) => Math.max(max, row.round)), 0);
+
+        scores.forEach(function(row) {
+          row.round = max_round;
+        });
+
+        resolve(scores);
+      });
+    });
+  },
+  updateScores: function(auto_retry) {
+    if (!arguments.length) {
+      auto_retry = true;
+    }
+
+    var game = this;
+    var round = this.races.nextRace.round - 1;
+
+    return new Promise(function(resolve, reject) {
+      game.results.fetchRace(round).then(function(result) {
+        game.bets.round(round).then(function(bets) {
+          (new PointsCalculator(result)).process(bets).then(function(scores) {
+            game.bets.saveScores(round, scores).then(function() {
+              resolve();
+            }, function(err) {
+              console.log(err);
+            });
+          });
+        });
+      }, function(err) {
+        if (err == -1) {
+          if (auto_retry) {
+            console.log("No score data, retry");
+            setTimeout(function() {
+              game.updateScores();
+            }, 60 * 1000 * 10);
+          }
+        } else {
+          throw new Error(err.toString());
+        }
+      });
+    });
   },
   parseDrivers: function(d1, d2, d3) {
     var keys = Array.prototype.slice.apply(arguments).map(function(name) {

@@ -37,6 +37,9 @@ module.exports = {
     });
   },
   completeUrl: function(url) {
+    if (!url) {
+      throw new Error("Invalid URL passed");
+    }
     if (!url.match('://')) {
       url = 'http://' + url;
     }
