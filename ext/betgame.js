@@ -102,10 +102,10 @@ exports.initialize = function(bot) {
       bot.spam("Hello everybody! Bet window is now open and bets are allowed until qualifying starts!");
     };
 
-    setTimeout(notify, 1000 * 60 * 6);
-    setTimeout(notify, 1000 * 60 * 10);
-    setTimeout(notify, 1000 * 60 * 16);
-    setTimeout(notify, 1000 * 60 * 20);
+    setTimeout(notify, 1000 * 3600 * 6);
+    setTimeout(notify, 1000 * 3600 * 10);
+    setTimeout(notify, 1000 * 3600 * 16);
+    setTimeout(notify, 1000 * 3600 * 20);
 
     notify();
   });
