@@ -18,7 +18,7 @@ var Connection = function(config) {
   this.channels = [];
   this.userCache = new UserCache(this);
   this.messageQueue = new MessageQueue({
-    interval: 500,
+    interval: 1000,
     client: this.client,
   });
 
@@ -257,9 +257,21 @@ MessageQueue.prototype = {
     }
 
     var queue = this;
-    this.timer = setInterval(function() {
-      queue.next();
-    }, this.delay);
+    this.next();
+
+    // this.timer = setInterval(function() {
+    //   queue.next();
+    //
+    //   if (!queue.queue.length) {
+    //     queue.stop();
+    //   }
+    // }, this.delay);
+  },
+  stop: function() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
   },
   push: function(message) {
     this.queue.push(message);

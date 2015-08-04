@@ -2,22 +2,34 @@
 var http = require("http");
 var https = require("https");
 var Promise = require("promise");
+var urllib = require("url");
 
 module.exports = {
+  head: function(url) {
+    return this._request(url, "HEAD");
+  },
   download: function(url) {
-    url = this.completeUrl(url);
-
+    return this._request(url, "GET");
+  },
+  _request: function(url, method) {
     return new Promise(function(resolve, reject) {
-      var client = url.substring(0, 8) == "https://" ? https : http;
+      if (url.indexOf("://") == -1) {
+        url = "http://" + url;
+      }
 
-      client.get(url, function(res) {
+      var info = urllib.parse(url);
+      info.method = method;
+
+      var client = info.protocol == "https" ? https : http;
+
+      var req = client.request(info, function(res) {
         var chunks = [];
 
-        res.on('data', function(chunk) {
+        res.on("data", function(chunk) {
           chunks.push(chunk);
         });
 
-        res.on('end', function() {
+        res.on("end", function() {
           if (res.statusCode > 300 && res.statusCode <= 308) {
             if (res.headers.location) {
               return resolve(module.exports.download(res.headers.location));
@@ -31,18 +43,10 @@ module.exports = {
           reject("unknown failure");
         });
       })
-      .on('error', function(err) {
+      .on("error", function(err) {
+        console.error("ERROR", err);
         reject(err.message);
-      });
+      }).end();
     });
-  },
-  completeUrl: function(url) {
-    if (!url) {
-      throw new Error("Invalid URL passed");
-    }
-    if (!url.match('://')) {
-      url = 'http://' + url;
-    }
-    return url;
-  },
+  }
 };
