@@ -3,6 +3,7 @@ var http = require("http");
 var https = require("https");
 var Promise = require("promise");
 var urllib = require("url");
+var zlib = require("zlib");
 
 module.exports = {
   head: function(url) {
@@ -19,10 +20,13 @@ module.exports = {
 
       var info = urllib.parse(url);
       info.method = method;
+      info["user-agent"] = "Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20100101 Firefox/10.0";
 
-      var client = info.protocol == "https" ? https : http;
+      var client = info.protocol == "https:" ? https : http;
 
-      var req = client.request(info, function(res) {
+      console.log("PROTOCOL", info.protocol == "https:" ? "https" : "http");
+
+      var req = client.get(info, function(res) {
         var chunks = [];
 
         res.on("data", function(chunk) {
@@ -47,6 +51,18 @@ module.exports = {
         console.error("ERROR", err);
         reject(err.message);
       }).end();
+    });
+  },
+  _isGzip: function(response) {
+    return response.headers["content-encoding"] == "gzip";
+  },
+  _uncompress: function(data) {
+    var isGzip = this._isGzip;
+    return new Promise(function(resolve, reject) {
+      zlib.unzip(data, function(data) {
+        console.log("UNCOMP!", data);
+        resolve(data);
+      });
     });
   }
 };

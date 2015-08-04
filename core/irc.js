@@ -259,13 +259,13 @@ MessageQueue.prototype = {
     var queue = this;
     this.next();
 
-    // this.timer = setInterval(function() {
-    //   queue.next();
-    //
-    //   if (!queue.queue.length) {
-    //     queue.stop();
-    //   }
-    // }, this.delay);
+    this.timer = setInterval(function() {
+      queue.next();
+
+      if (!queue.queue.length) {
+        queue.stop();
+      }
+    }, this.delay);
   },
   stop: function() {
     if (this.timer) {

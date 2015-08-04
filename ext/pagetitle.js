@@ -40,6 +40,8 @@ var PageTitle = {
             var data = iconv.decode(response.data, charset);
             var title = PageTitle.parseTitle(data);
 
+            // console.log("TITLE", response.data.toString("utf8"));
+
             if (title) {
               return resolve("> " + title);
             }

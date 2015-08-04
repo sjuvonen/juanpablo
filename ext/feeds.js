@@ -154,7 +154,7 @@ Feed.prototype = {
       });
 
       Object.keys(feed.cache).forEach(function(key) {
-        if (feed.cache[key] < lastUpdated) {
+        if (feed.cache[key] < lastUpdate) {
           delete feed.cache[key];
         }
       });
