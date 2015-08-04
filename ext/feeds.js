@@ -110,6 +110,7 @@ var Feed = function(options) {
   this.events = new events.EventEmitter;
   this.updated = new Date;
   this.updated.setMinutes(this.updated.getMinutes() - 5);
+  this.cache = {};
 };
 
 Feed.prototype = {
@@ -118,7 +119,7 @@ Feed.prototype = {
     process.nextTick(function() {
       var req = request(feed.url);
       var parser = new FeedParser({feedurl: feed.url});
-      var lastUpdate = feed.updated;
+      var lastUpdate = feed.updated - 1000 * 60 * 30;
 
       feed.updated = new Date;
 
@@ -140,14 +141,21 @@ Feed.prototype = {
       parser.on("readable", function() {
         var item;
         while (item = this.read()) {
-          if (lastUpdate < item.pubDate) {
+          if (lastUpdate < item.pubDate && !(item.title in feed.cache)) {
             feed.emit("article", {
               source: feed.name,
               title: item.title,
               date: item.pubDate,
               link: item.link,
             });
+            feed.cache[item.title] = new Date;
           }
+        }
+      });
+
+      Object.keys(feed.cache).forEach(function(key) {
+        if (feed.cache[key] < lastUpdated) {
+          delete feed.cache[key];
         }
       });
     });
