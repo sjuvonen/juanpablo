@@ -29,21 +29,22 @@ var PageTitle = {
   fetchPage: function(url) {
     return new Promise(function(resolve, reject) {
       PageTitle.net.download(url).then(function(response) {
-        if ("content-type" in response.headers) {
-          if (response.headers["content-type"].match("html")) {
-            var charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
-            charset = charset ? charset[1] : "UTF-8";
+        if (!("content-type" in response.headers) || !response.headers["content-type"].match("html")) {
+          return reject("Invalid content type");
+        }
+        // PageTitle.net.download(url).then(function(response) {
+          var charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
+          charset = charset ? charset[1] : "UTF-8";
 
-            if (charset) {
-              var data = iconv.decode(response.data, charset);
-              var title = PageTitle.parseTitle(data);
+          if (charset) {
+            var data = iconv.decode(response.data, charset);
+            var title = PageTitle.parseTitle(data);
 
-              if (title) {
-                return resolve("Title: " + title);
-              }
+            if (title) {
+              return resolve("> " + title);
             }
           }
-        }
+        // });
       });
     });
   },
