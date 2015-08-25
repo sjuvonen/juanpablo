@@ -4,18 +4,18 @@
 
  "use strict";
 
-var events = require("events");
-var FeedParser = require("feedparser");
-var Promise = require("promise");
-var request = require("request");
-var util = require("util");
+let events = require("events");
+let FeedParser = require("feedparser");
+let Promise = require("promise");
+let request = require("request");
+let util = require("util");
 
 exports.initialize = function(bot) {
-  var feeds = new FeedManager(bot, bot.config.feeds);
+  let feeds = new FeedManager(bot, bot.config.feeds);
   feeds.watch();
 };
 
-var FeedManager = function(bot, options) {
+let FeedManager = function(bot, options) {
   if (options.refresh < 60) {
     throw new Error("Minimum feed polling interval is one minute!");
   }
@@ -37,7 +37,7 @@ FeedManager.prototype = {
       console.error("FeedManager already running");
       return false;
     }
-    var manager = this;
+    let manager = this;
     manager.refresh();
 
     this.timers.refresh = setInterval(function() {
@@ -54,9 +54,9 @@ FeedManager.prototype = {
     }
   },
   refresh: function() {
-    var manager = this;
+    let manager = this;
     return new Promise(function(resolve, reject) {
-      var now = new Date;
+      let now = new Date;
 
       manager.feeds.forEach(function(feed) {
         if (now - feed.updated >= manager.refreshTime) {
@@ -74,8 +74,8 @@ FeedManager.prototype = {
     if (!this.queue.length) {
       return;
     }
-    var article = this.queue.shift();
-    var message = this.formatArticle(article);
+    let article = this.queue.shift();
+    let message = this.formatArticle(article);
     this.bot.spam(message);
   },
   formatArticle: function(article) {
@@ -93,10 +93,10 @@ Object.defineProperties(FeedManager.prototype, {
     },
     set: function(sources) {
       this._feeds = [];
-      var manager = this;
+      let manager = this;
 
       sources.forEach(function(source) {
-        var feed = new Feed(source);
+        let feed = new Feed(source);
         manager.feeds.push(feed);
 
         feed.on("article", function(item) {
@@ -107,7 +107,7 @@ Object.defineProperties(FeedManager.prototype, {
   }
 });
 
-var Feed = function(options) {
+let Feed = function(options) {
   this.options = options;
   this.events = new events.EventEmitter;
   this.updated = new Date;
@@ -117,11 +117,11 @@ var Feed = function(options) {
 
 Feed.prototype = {
   refresh: function() {
-    var feed = this;
+    let feed = this;
     process.nextTick(function() {
-      var req = request(feed.url);
-      var parser = new FeedParser({feedurl: feed.url});
-      var lastUpdate = feed.updated - 1000 * 60 * 30;
+      let req = request(feed.url);
+      let parser = new FeedParser({feedurl: feed.url});
+      let lastUpdate = feed.updated - 1000 * 60 * 30;
 
       feed.updated = new Date;
 
@@ -141,7 +141,7 @@ Feed.prototype = {
       });
 
       parser.on("readable", function() {
-        var item;
+        let item;
         while (item = this.read()) {
           if (lastUpdate < item.pubDate && !(item.title in feed.cache)) {
             feed.emit("article", {

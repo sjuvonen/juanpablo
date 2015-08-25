@@ -1,7 +1,7 @@
 "use strict";
 
-var config = require("./config");
+let config = require("./config");
 config.root = __dirname;
 
-var bot = new (require("./core/bot").Bot)(config);
+let bot = new (require("./core/bot").Bot)(config);
 bot.start();

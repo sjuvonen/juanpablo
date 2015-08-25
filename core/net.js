@@ -1,10 +1,10 @@
 "use strict";
 
-var http = require("http");
-var https = require("https");
-var Promise = require("promise");
-var urllib = require("url");
-var zlib = require("zlib");
+let http = require("http");
+let https = require("https");
+let Promise = require("promise");
+let urllib = require("url");
+let zlib = require("zlib");
 
 module.exports = {
   head: function(url) {
@@ -19,14 +19,14 @@ module.exports = {
         url = "http://" + url;
       }
 
-      var info = urllib.parse(url);
+      let info = urllib.parse(url);
       info.method = method;
       info["user-agent"] = "Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20100101 Firefox/10.0";
 
-      var client = info.protocol == "https:" ? https : http;
+      let client = info.protocol == "https:" ? https : http;
 
-      var req = client.get(info, function(res) {
-        var chunks = [];
+      let req = client.get(info, function(res) {
+        let chunks = [];
 
         res.on("data", function(chunk) {
           chunks.push(chunk);
@@ -56,7 +56,7 @@ module.exports = {
     return response.headers["content-encoding"] == "gzip";
   },
   _uncompress: function(data) {
-    var isGzip = this._isGzip;
+    let isGzip = this._isGzip;
     return new Promise(function(resolve, reject) {
       zlib.unzip(data, function(data) {
         console.log("UNCOMP!", data);

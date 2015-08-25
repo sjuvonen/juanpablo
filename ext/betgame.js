@@ -1,21 +1,21 @@
 "use strict";
 
-var events = require("events");
-var htmlparser = require("htmlparser2");
-var moment = require("moment");
-var Promise = require("promise");
-var util = require("util");
+let events = require("events");
+let htmlparser = require("htmlparser2");
+let moment = require("moment");
+let Promise = require("promise");
+let util = require("util");
 
-var commands = require("../core/commands");
+let commands = require("../core/commands");
 
 exports.initialize = function(bot) {
-  var drivers = bot.shared.drivers;
-  var races = bot.shared.events;
+  let drivers = bot.shared.drivers;
+  let races = bot.shared.events;
 
-  var game = new Game(bot.database, drivers, races, new RaceResults(bot.net, bot.config.betgame));
+  let game = new Game(bot.database, drivers, races, new RaceResults(bot.net, bot.config.betgame));
   game._initDatabase();
 
-  var perms = bot.config.debug
+  let perms = bot.config.debug
     ? commands.Command.ALLOW_ALL
     : commands.Command.ALLOW_AUTHED;
 
@@ -26,7 +26,7 @@ exports.initialize = function(bot) {
           if (!bets) {
             return resolve("You have not placed any bets for this round");
           }
-          var line = [bets.d1, bets.d2, bets.d3].map(function(name, i) {
+          let line = [bets.d1, bets.d2, bets.d3].map(function(name, i) {
             return util.format("%d. %s", i+1, name);
           }).join("; ");
 
@@ -34,7 +34,7 @@ exports.initialize = function(bot) {
         });
       } else {
         if (!game.betsAllowed) {
-          var datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
+          let datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
           throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
         }
 
@@ -60,7 +60,7 @@ exports.initialize = function(bot) {
           params[0] = races.lastRace.round;
         }
 
-        var race = races.race(params[0]);
+        let race = races.race(params[0]);
 
         if (!race) {
           return resolve("Invalid round " + params[0]);
@@ -68,7 +68,7 @@ exports.initialize = function(bot) {
 
         game.scores(params[0]).then(function(points) {
           if (points.length) {
-            var line = points.map(function(row, i) {
+            let line = points.map(function(row, i) {
               return util.format("%s %d", row.nick, row.points);
             }).join("; ");
             resolve({
@@ -81,10 +81,10 @@ exports.initialize = function(bot) {
         });
       } else {
         game.topScores().then(function(points) {
-          var line = points.map(function(row, i) {
+          let line = points.map(function(row, i) {
             return util.format("%s %d", row.nick, row.points);
           }).join("; ");
-          var race = races.race(points[0].round);
+          let race = races.race(points[0].round);
           resolve({
             message: util.format("Points after %s: %s", race.title, line),
             method: "notice",
@@ -99,7 +99,7 @@ exports.initialize = function(bot) {
   bot.events.on("race.week.begin", function() {
     console.log("race.week.begin()");
 
-    var notify = function() {
+    let notify = function() {
       bot.spam("Hello everybody! Bet window is now open and bets are allowed until qualifying starts!");
     };
 
@@ -114,15 +114,15 @@ exports.initialize = function(bot) {
   bot.events.on("race.weekend.begin", function() {
     console.log("race.weekend.begin()");
 
-    var notify = function() {
+    let notify = function() {
       bot.spam("Hello everybody! Remember to !bet for race podium before quali!");
     };
 
-    var last_chance = function() {
+    let last_chance = function() {
       bot.spam("Last chance to !bet for race podium! Qualifying in 30 minutes!");
     };
 
-    var deadline = moment(races.nextQualifying.date);
+    let deadline = moment(races.nextQualifying.date);
 
     setTimeout(last_chance, deadline.subtract(30, "minutes").diff());
     setTimeout(notify, deadline.subtract(1.5, "hours").diff());
@@ -142,9 +142,13 @@ exports.initialize = function(bot) {
       console.log("FETCH FAILED", err);
     });
   });
+
+  setTimeout(function() {
+    game.updateScores();
+  }, 5000);
 };
 
-var RaceResults = function(net, options) {
+let RaceResults = function(net, options) {
   this.net = net;
   this.url = options.results;
 
@@ -158,7 +162,7 @@ RaceResults.prototype = {
       throw new Error("Have to define which round to fetch");
     }
 
-    var cache = this;
+    let cache = this;
     return new Promise(function(resolve, reject) {
       if (i < cache.results.length) {
         return resolve(cache.results[i]);
@@ -169,7 +173,7 @@ RaceResults.prototype = {
     });
   },
   fetchRace: function(i) {
-    var cache = this;
+    let cache = this;
     return new Promise(function(resolve, reject) {
       cache.net.download(cache.url).then(function(response) {
         (new ResultsParser({round: i})).parse(response.data.toString()).then(function(result) {
@@ -186,13 +190,13 @@ RaceResults.prototype = {
   }
 };
 
-var ResultsParser = function(options) {
+let ResultsParser = function(options) {
   this.round = options.round;
 };
 
 ResultsParser.prototype = {
   parse: function(html) {
-    var State = {
+    let State = {
       WAIT: 0,
       WAIT_TITLE_SPAN: 1,
       WAIT_LEGEND_TABLE: 2,
@@ -203,15 +207,15 @@ ResultsParser.prototype = {
       READ_NAME: 7,
       CELL_RESULT: 8,
     };
-    var target_round = this.round;
+    let target_round = this.round;
     return new Promise(function(resolve) {
-      var result = [];
-      var cell_i = 0;
-      var name = null;
-      var state = State.WAIT;
+      let result = [];
+      let cell_i = 0;
+      let name = null;
+      let state = State.WAIT;
 
       try {
-        var parser = new htmlparser.Parser({
+        let parser = new htmlparser.Parser({
           onopentag: function(tag, attrs) {
             switch (state) {
               case State.WAIT:
@@ -255,7 +259,7 @@ ResultsParser.prototype = {
                 break;
               case State.CELL_RESULT:
                 if (cell_i == target_round && text.trim().length) {
-                  var pos = parseInt(text.trim());
+                  let pos = parseInt(text.trim());
                   if (pos) {
                     result[pos-1] = name;
                   }
@@ -295,7 +299,7 @@ ResultsParser.prototype = {
   },
 };
 
-var PointsCalculator = function(results) {
+let PointsCalculator = function(results) {
   this.results = results;
 };
 
@@ -312,10 +316,10 @@ var PointsCalculator = function(results) {
 
 PointsCalculator.prototype = {
   process: function(bets) {
-    var calc = this;
+    let calc = this;
     return new Promise(function(resolve) {
       process.nextTick(function() {
-        var points = bets.map((row, i) => ({
+        let points = bets.map((row, i) => ({
           user: row.user,
           nick: row.nick,
           points: calc.scores(row),
@@ -326,10 +330,10 @@ PointsCalculator.prototype = {
     });
   },
   scores: function(row) {
-    var scoring = [10, 5, 3, 1];
-    var bonus = 5;
-    var res = this.results;
-    var points = 0;
+    let scoring = [10, 5, 3, 1];
+    let bonus = 5;
+    let res = this.results;
+    let points = 0;
 
     [row.d1, row.d2, row.d3].forEach(function(name, i) {
       if (name == res[i]) {
@@ -339,7 +343,7 @@ PointsCalculator.prototype = {
       }
     }, this);
 
-    var max = scoring.slice(0, 3).reduce((sum, x) => sum+x, 0);
+    let max = scoring.slice(0, 3).reduce((sum, x) => sum+x, 0);
 
     if (points == max) {
       points += bonus;
@@ -352,7 +356,7 @@ PointsCalculator.prototype = {
   },
 };
 
-var Bets = function(database) {
+let Bets = function(database) {
   this.database = database;
 };
 
@@ -362,13 +366,13 @@ Bets.prototype = {
    * @param user Auth info for user [optional
    */
   round: function(round, user) {
-    var db = this.database;
+    let db = this.database;
     return new Promise(function(resolve) {
-      var sql = "\
+      let sql = "\
         SELECT user, nick, d1, d2, d3 \
         FROM betgame_bets \
         WHERE round = $round AND season = $season";
-      var params = {
+      let params = {
         $round: round,
         $season: (new Date).getUTCFullYear(),
       };
@@ -387,7 +391,7 @@ Bets.prototype = {
     });
   },
   user: function(user, round) {
-    var bets = this;
+    let bets = this;
     return new Promise(function(resolve) {
       user.whois().then(function(info) {
         bets.round(round, info).then(function(data) {
@@ -397,9 +401,11 @@ Bets.prototype = {
     });
   },
   scores: function(round) {
-    var db = this.database;
+
+    console.log("BETS FOR ROUND", round);
+    let db = this.database;
     return new Promise(function(resolve) {
-      var sql = "\
+      let sql = "\
         SELECT MAX(round) round, \
           SUM(points) points, \
           user, \
@@ -409,7 +415,7 @@ Bets.prototype = {
         %s \
         GROUP BY user \
         ORDER BY points DESC";
-      var params = {$season: (new Date).getUTCFullYear()};
+      let params = {$season: (new Date).getUTCFullYear()};
       if (round) {
         params.$round = parseInt(round);
         sql = util.format(sql, " AND round = $round");
@@ -426,14 +432,14 @@ Bets.prototype = {
     });
   },
   save: function(round, user, names) {
-    var db = this.database;
+    let db = this.database;
 
     return new Promise(function(resolve) {
       user.whois().then(function(info) {
-        var sql = "INSERT INTO betgame_bets (season, round, user, nick, d1, d2, d3) \
+        let sql = "INSERT INTO betgame_bets (season, round, user, nick, d1, d2, d3) \
             VALUES ($season, $round, $user, $nick, $d1, $d2, $d3)";
 
-        var params = {
+        let params = {
           $season: (new Date).getUTCFullYear(),
           $round: round,
           $user: info.account || "DEMO",
@@ -466,14 +472,14 @@ Bets.prototype = {
     });
   },
   saveScores: function(round, scores) {
-    var db = this.database;
+    let db = this.database;
     return new Promise(function(resolve) {
       db.run("DELETE FROM betgame_points WHERE round = $round", {$round: round});
 
-      var season = (new Date).getUTCFullYear();
+      let season = (new Date).getUTCFullYear();
 
-      var sql = "INSERT INTO betgame_points(season, round, user, nick, points) VALUES (?, ?, ?, ?, ?)";
-      var smt = db.prepare(sql);
+      let sql = "INSERT INTO betgame_points(season, round, user, nick, points) VALUES (?, ?, ?, ?, ?)";
+      let smt = db.prepare(sql);
 
       scores.forEach(function(row) {
         smt.run(season, round, row.user, row.nick, row.points);
@@ -487,7 +493,7 @@ Bets.prototype = {
 
 };
 
-var Game = function(database, drivers, races, results) {
+let Game = function(database, drivers, races, results) {
   this.database = database;
   this.drivers = drivers;
   this.races = races;
@@ -502,7 +508,7 @@ var Game = function(database, drivers, races, results) {
 
 Game.prototype = {
   _initDatabase: function() {
-    var db = this.database;
+    let db = this.database;
 
     db.serialize(function() {
       db.run("CREATE TABLE IF NOT EXISTS betgame_bets( \
@@ -528,13 +534,13 @@ Game.prototype = {
     });
   },
   bet: function(user, d1, d2, d3) {
-    var game = this;
-    var round = this.races.nextQualifying.round;
+    let game = this;
+    let round = this.races.nextQualifying.round;
 
     return new Promise(function(resolve, reject) {
       game.parseDrivers(d1, d2, d3).then(function(names) {
         game.bets.save(round, user, names).then(function() {
-          var joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
+          let joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
           resolve(util.format("%s: %s [OK]", user.nick, joined));
         }, function(err) {
           console.log("err", err);
@@ -543,18 +549,18 @@ Game.prototype = {
     });
   },
   userBets: function(user) {
-    var round = this.races.nextRace.round;
+    let round = this.races.nextRace.round;
     return this.bets.user(user, round);
   },
   scores: function(round) {
     return this.bets.scores.apply(this.bets, arguments);
   },
   topScores: function() {
-    var game = this;
+    let game = this;
 
     return new Promise(function(resolve) {
       return game.scores().then(function(scores) {
-        var max_round = scores.reduce(((max, row) => Math.max(max, row.round)), 0);
+        let max_round = scores.reduce(((max, row) => Math.max(max, row.round)), 0);
 
         scores.forEach(function(row) {
           row.round = max_round;
@@ -569,8 +575,8 @@ Game.prototype = {
       auto_retry = true;
     }
 
-    var game = this;
-    var round = this.races.nextRace.round - 1;
+    let game = this;
+    let round = this.races.nextRace.round - 1;
 
     return new Promise(function(resolve, reject) {
       game.results.fetchRace(round).then(function(result) {
@@ -598,21 +604,21 @@ Game.prototype = {
     });
   },
   parseDrivers: function(d1, d2, d3) {
-    var keys = Array.prototype.slice.apply(arguments).map(function(name) {
+    let keys = Array.prototype.slice.apply(arguments).map(function(name) {
       return name.toLowerCase();
     });
 
-    var drivers = this.drivers;
+    let drivers = this.drivers;
     return new Promise(function(resolve, reject) {
       drivers.get(true).then(function(data) {
-        var names = [null, null, null];
+        let names = [null, null, null];
 
-        for (var i = 0; i < keys.length; i++) {
-          var d = keys[i];
+        for (let i = 0; i < keys.length; i++) {
+          let d = keys[i];
 
-          for (var j = 0; j < data.length; j++) {
-            var row = data[j];
-            var surname = row.name.split(" ", 2)[1]
+          for (let j = 0; j < data.length; j++) {
+            let row = data[j];
+            let surname = row.name.split(" ", 2)[1]
               .toLowerCase()
               .replace("ä", "a")
               .replace("ö", "o");
@@ -642,7 +648,7 @@ Object.defineProperties(Game.prototype, {
   },
   betsOpen: {
     get: function() {
-      var event = this.races.nextQualifying;
+      let event = this.races.nextQualifying;
       if (event) {
         return moment.utc(event.date).subtract(5, "days").hour(0).toDate();
       }

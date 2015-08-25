@@ -6,20 +6,20 @@
 
 "use strict";
 
-var entities = require("entities");
-var htmlparser = require("htmlparser2");
-var Promise = require("promise");
-var net = require("../core/net");
-var util = require("util");
+let entities = require("entities");
+let htmlparser = require("htmlparser2");
+let Promise = require("promise");
+let net = require("../core/net");
+let util = require("util");
 
 exports.initialize = function(bot) {
-  var drivers = new Standings({
+  let drivers = new Standings({
     net: net,
     mode: Parser.READ_DRIVERS,
     url: bot.config.standings.drivers
   });
 
-  var teams = new Standings({
+  let teams = new Standings({
     net: net,
     mode: Parser.READ_TEAMS,
     url: bot.config.standings.teams
@@ -30,13 +30,13 @@ exports.initialize = function(bot) {
 
   bot.addCommand("points", function() {
     return new Promise(function(resolve, reject) {
-      var reply = [];
+      let reply = [];
       drivers.get().then(function(d_pts) {
-        var row = d_pts.slice(0, 3).map(formatItem);
+        let row = d_pts.slice(0, 3).map(formatItem);
         reply.push("Drivers: " + row.join("; "));
 
         teams.get().then(function(t_pts) {
-          var row = t_pts.slice(0, 3).map(formatItem);
+          let row = t_pts.slice(0, 3).map(formatItem);
           reply.push("Teams: " + row.join("; "));
 
           resolve(reply);
@@ -48,11 +48,11 @@ exports.initialize = function(bot) {
   });
 };
 
-var formatItem = function(item, i) {
+let formatItem = function(item, i) {
   return util.format("%d. %s (%d pts)", i+1, item.name, item.points);
 };
 
-var Standings = function(options) {
+let Standings = function(options) {
   this.net = options.net;
   this.mode = options.mode;
   this.url = options.url;
@@ -64,7 +64,7 @@ var Standings = function(options) {
 
 Standings.prototype = {
   get: function(force_cache) {
-    var cache = this;
+    let cache = this;
     return new Promise(function(resolve, reject) {
       if (!cache.needsRefresh || (force_cache && cache.standings)) {
         return resolve(cache.standings);
@@ -94,13 +94,13 @@ Object.defineProperties(Standings.prototype, {
   },
   needsRefresh: {
     get: function() {
-      var interval = 300 * 1000;
+      let interval = 300 * 1000;
       return (new Date) - this.updated >= interval;
     }
   }
 });
 
-var Parser = function(mode) {
+let Parser = function(mode) {
   this.mode = mode;
 };
 
@@ -109,7 +109,7 @@ Parser.READ_TEAMS = 2;
 
 Parser.prototype = {
   parse: function(html) {
-    var State = {
+    let State = {
       WAIT: 0,
       WAIT_TABLE: 1,
 
@@ -120,15 +120,15 @@ Parser.prototype = {
       READ_POINTS: 31,
     };
 
-    var mode = this.mode;
+    let mode = this.mode;
 
     return new Promise(function(resolve, reject) {
       process.nextTick(function() {
-        var standings = [];
-        var state = State.WAIT;
-        var item;
+        let standings = [];
+        let state = State.WAIT;
+        let item;
 
-        var parser = new htmlparser.Parser({
+        let parser = new htmlparser.Parser({
           onopentag: function(tag, attrs) {
             switch (state) {
               case State.WAIT:

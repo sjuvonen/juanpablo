@@ -6,14 +6,14 @@
 
 "use strict";
 
-var fs = require("fs");
-var ical = require("ical.js");
-var moment = require("moment");
-var Promise = require("promise");
-var util = require("util");
+let fs = require("fs");
+let ical = require("ical.js");
+let moment = require("moment");
+let Promise = require("promise");
+let util = require("util");
 
 exports.initialize = function(bot) {
-  var events = new EventCache(bot.events, bot.config.events.file);
+  let events = new EventCache(bot.events, bot.config.events.file);
   bot.shared.events = events;
 
   events.reload().then(function() {
@@ -22,17 +22,17 @@ exports.initialize = function(bot) {
 
   bot.addCommand("next", function() {
     return new Promise(function(resolve, reject) {
-      var event = events.nextEvent;
+      let event = events.nextEvent;
 
       if (!event) {
         return resolve("No event info found!");
       }
 
-      var now = new Date;
-      var date = moment.utc(event.date);
-      var diff = moment.duration(date.diff(new Date));
-      var timestamp = date.format("MMMM D, HH:mm UTC");
-      var display = [timestamp];
+      let now = new Date;
+      let date = moment.utc(event.date);
+      let diff = moment.duration(date.diff(new Date));
+      let timestamp = date.format("MMMM D, HH:mm UTC");
+      let display = [timestamp];
 
       if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
         display.push(" (in");
@@ -62,7 +62,7 @@ exports.initialize = function(bot) {
   });
 };
 
-var EventCache = function(event_manager, file) {
+let EventCache = function(event_manager, file) {
   this.events = event_manager;
   this.file = file;
   this.races = [];
@@ -76,10 +76,10 @@ var EventCache = function(event_manager, file) {
 EventCache.prototype = {
   watch: function() {
     if (!this.timers.weekendStart) {
-      var race = this.nextRace;
-      var ref = moment.utc(race.date).subtract(2, "days").hours(0);
-      var diff = moment(ref).diff();
-      var cache = this;
+      let race = this.nextRace;
+      let ref = moment.utc(race.date).subtract(2, "days").hours(0);
+      let diff = moment(ref).diff();
+      let cache = this;
 
       this.timers.weekStart = setTimeout(function() {
           cache.events.emit("race.week.begin");
@@ -95,8 +95,8 @@ EventCache.prototype = {
     }
   },
   race: function(num) {
-    for (var i = 0; i < this.races.length; i++) {
-      var event = this.races[i];
+    for (let i = 0; i < this.races.length; i++) {
+      let event = this.races[i];
       if (event.type == EventInfo.RACE) {
         if (--num == 0) {
           return event;
@@ -105,7 +105,7 @@ EventCache.prototype = {
     }
   },
   reload: function() {
-    var cache = this;
+    let cache = this;
     return new Promise(function(resolve, reject) {
       fs.readFile(cache.file, function(err, data) {
         if (err) {
@@ -120,10 +120,10 @@ EventCache.prototype = {
     });
   },
   _next: function(type) {
-    var now = new Date;
+    let now = new Date;
 
-    for (var i = 0; i < this.races.length; i++) {
-      var event = this.races[i];
+    for (let i = 0; i < this.races.length; i++) {
+      let event = this.races[i];
       if (event.date >= now) {
         if (!type || event.type == type) {
           return event;
@@ -151,10 +151,10 @@ Object.defineProperties(EventCache.prototype, {
   },
   lastRace: {
     get: function() {
-      var now = new Date;
-      var race_i = 0;
-      for (var i = 0; i < this.races.length; i++) {
-        var event = this.races[i];
+      let now = new Date;
+      let race_i = 0;
+      for (let i = 0; i < this.races.length; i++) {
+        let event = this.races[i];
         if (event.type == EventInfo.RACE) {
           race_i++;
           if (event.date > now) {
@@ -167,7 +167,7 @@ Object.defineProperties(EventCache.prototype, {
   }
 });
 
-var EventInfo = function(data) {
+let EventInfo = function(data) {
   this.data = data;
 };
 
@@ -202,30 +202,30 @@ Object.defineProperties(EventInfo.prototype, {
   },
 });
 
-var Parser = function() {
+let Parser = function() {
 
 };
 
 Parser.prototype = {
   parse: function(data) {
     return new Promise(function(resolve, reject) {
-      var parsed = ical.parse(data);
-      var cal = new ical.Component(parsed);
-      var items = cal.getAllSubcomponents("vevent");
-      var events = [];
-      var round = 1;
+      let parsed = ical.parse(data);
+      let cal = new ical.Component(parsed);
+      let items = cal.getAllSubcomponents("vevent");
+      let events = [];
+      let round = 1;
 
       items.forEach(function(vevent, i) {
         process.nextTick(function() {
-          var event = new ical.Event(vevent);
-          var parsed = event.summary.match(/([\w\s]+) Session \(([\w\s]+)\)/);
-          var title = event.summary;
+          let event = new ical.Event(vevent);
+          let parsed = event.summary.match(/([\w\s]+) Session \(([\w\s]+)\)/);
+          let title = event.summary;
 
           if (parsed) {
             title = parsed[1] + ", " + parsed[2];
           }
 
-          var type = title.match(/practi[cs]e/i) ? EventInfo.PRACTISE
+          let type = title.match(/practi[cs]e/i) ? EventInfo.PRACTISE
             : (title.match(/quali/i) ? EventInfo.QUALIFYING : EventInfo.RACE);
 
           events.push(new EventInfo({

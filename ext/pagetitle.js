@@ -4,14 +4,14 @@
 
 "use strict";
 
-var entities = require("entities");
-var iconv = require("iconv-lite");
-var Promise = require("promise");
+let entities = require("entities");
+let iconv = require("iconv-lite");
+let Promise = require("promise");
 
 exports.initialize = function(bot) {
   PageTitle.net = bot.net;
   bot.on("message", function(message) {
-    var url = PageTitle.parseUrl(message.content);
+    let url = PageTitle.parseUrl(message.content);
 
     if (url) {
       PageTitle.fetchPage(url).then(function(title) {
@@ -23,9 +23,9 @@ exports.initialize = function(bot) {
   });
 };
 
-var PageTitle = {
+let PageTitle = {
   parseUrl: function(text) {
-    var result = text.match(/(http.{0,1}:\/\/|www\.)\S+/);
+    let result = text.match(/(http.{0,1}:\/\/|www\.)\S+/);
     return result ? result[0] : null;
   },
   fetchPage: function(url) {
@@ -35,12 +35,12 @@ var PageTitle = {
           return reject("Invalid content type");
         }
         // PageTitle.net.download(url).then(function(response) {
-          var charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
+          let charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
           charset = charset ? charset[1] : "UTF-8";
 
           if (charset) {
-            var data = iconv.decode(response.data, charset);
-            var title = PageTitle.parseTitle(data);
+            let data = iconv.decode(response.data, charset);
+            let title = PageTitle.parseTitle(data);
 
             if (title) {
               return resolve("> " + title);
@@ -51,7 +51,7 @@ var PageTitle = {
     });
   },
   parseTitle: function(html) {
-    var title = html.match(/<title.*?>(.+)<\/title>/i);
+    let title = html.match(/<title.*?>(.+)<\/title>/i);
 
     console.log("LEN", title);
     return title ? entities.decodeHTML(title[1]) : null;

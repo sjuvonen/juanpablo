@@ -1,16 +1,16 @@
 "use strict";
 
-var events = require("events");
-var Promise = require("promise");
-var util = require("util");
+let events = require("events");
+let Promise = require("promise");
+let util = require("util");
 
-var commands = require("./commands");
-var files = require("./files");
-var irc = require("./irc");
-var modules = require("./modules");
-var netUtils = require("./net");
+let commands = require("./commands");
+let files = require("./files");
+let irc = require("./irc");
+let modules = require("./modules");
+let netUtils = require("./net");
 
-var Bot = function(config) {
+let Bot = function(config) {
   this.shared = {};
   this.config = config;
   this.servers = {};
@@ -33,14 +33,14 @@ var Bot = function(config) {
     console.log("LOAD MODULE", name);
   });
 
-  var bot = this;
+  let bot = this;
 
   this.addCommand("help", function() {
     return new Promise(function(resolve, reject) {
-      var names = Object.keys(bot.commands.commands);
+      let names = Object.keys(bot.commands.commands);
       names.sort();
 
-      var message = "Commands: " + names.join(", ");
+      let message = "Commands: " + names.join(", ");
       resolve(message);
     });
   });
@@ -51,13 +51,13 @@ Bot.prototype = {
   start: function() {
     this.events.emit("debug.log", "Starting bot");
 
-    var eventManager = this.events;
-    var moduleManager = this.modules;
-    var modules = this.config.modules.slice();
+    let eventManager = this.events;
+    let moduleManager = this.modules;
+    let modules = this.config.modules.slice();
 
-    var loadNext = function() {
+    let loadNext = function() {
       if (modules.length) {
-        var name = modules.shift();
+        let name = modules.shift();
         moduleManager.load(name).then(loadNext, function(error) {
           console.error("Failed to load module", name, error);
           eventManager.emit("debug.log", "Failed to load module", name, error);
@@ -75,8 +75,8 @@ Bot.prototype = {
     }, this);
   },
   addConnection: function(config) {
-    var bot = this;
-    var connection = new irc.Connection(config);
+    let bot = this;
+    let connection = new irc.Connection(config);
     this.servers[config.name] = connection;
 
     connection.connect(function() {
@@ -99,7 +99,7 @@ Bot.prototype = {
          *    - method [say|notice]
         */
 
-        var reply, method;
+        let reply, method;
 
         if (result instanceof Error) {
           reply = result.toString();
@@ -123,16 +123,16 @@ Bot.prototype = {
 
     return connection;
   },
-  addCommand: function(name, perms, command) {
+  addCommand: function(name, perms, callback) {
     if (arguments.length == 2) {
-      command = perms;
+      callback = perms;
       perms = commands.Command.ALLOW_ALL;
     }
-    var command = new commands.Command(name, perms, command);
+    let command = new commands.Command(name, perms, callback);
     this.commands.register(command);
   },
   spam: function(message) {
-    var bot = this;
+    let bot = this;
     Object.keys(this.servers).forEach(function(name) {
       bot.servers[name].amsg(message);
     });
@@ -147,7 +147,7 @@ Object.defineProperties(Bot.prototype, {
   database: {
     get: function() {
       if (!("_db" in this)) {
-        var sqlite = require("sqlite3");
+        let sqlite = require("sqlite3");
         this._db = new sqlite.Database(this.files.toAbsolute("database.sqlite"));
       }
       return this._db;

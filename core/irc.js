@@ -1,15 +1,15 @@
 "use strict";
 
-var events = require("events");
-var irc = require("irc");
-var Promise = require("promise");
-var util = require("util");
+let events = require("events");
+let irc = require("irc");
+let Promise = require("promise");
+let util = require("util");
 
-var ignores = require("./ignores");
-var User = require("./user");
+let ignores = require("./ignores");
+let User = require("./user");
 
-var Connection = function(config) {
-  var copy = Object.create(config);
+let Connection = function(config) {
+  let copy = Object.create(config);
   copy.autoConnect = false;
 
   this.config = config;
@@ -23,10 +23,10 @@ var Connection = function(config) {
     client: this.client,
   });
 
-  var connection = this;
+  let connection = this;
   this.client.on("message", function(from, to, content, raw) {
     if (!connection.isIgnored(raw)) {
-      var message = new Message(from, to, content.trim(), connection);
+      let message = new Message(from, to, content.trim(), connection);
 
       switch (message.type) {
         case Message.COMMAND:
@@ -54,7 +54,7 @@ var Connection = function(config) {
   this.client.on("kick", function(channel, nick, by, reason, raw) {
     if (nick == connection.nick) {
       console.warn("Kicked from", channel);
-      var i = connection.channels.indexOf(channel);
+      let i = connection.channels.indexOf(channel);
       if (i >= 0) {
         connection.channels.splice(i, 1);
       }
@@ -71,7 +71,7 @@ Connection.prototype = {
     return this.ignores.isIgnored(info);
   },
   connect: function() {
-    var connection = this;
+    let connection = this;
     this.client.connect(5, function(raw) {
       console.log(util.format("CONNECTED TO %s AS %s", raw.server, raw.args[0]));
     });
@@ -83,7 +83,7 @@ Connection.prototype = {
     if (password) {
       channel += " " + password;
     }
-    var client = this.client;
+    let client = this.client;
     return new Promise(function(resolve, reject) {
       client.join(channel, function() {
         resolve();
@@ -100,16 +100,16 @@ Connection.prototype = {
     this.messageQueue.push({to: to, content: text, method: "say"});
   },
   whois: function(nick) {
-    var server = this;
+    let server = this;
     return new Promise(function(resolve, reject) {
-      var info = server.userCache.get(nick);
+      let info = server.userCache.get(nick);
 
       if (info) {
         process.nextTick(function() {
           resolve(info);
         });
       } else {
-        var cache = server.userCache;
+        let cache = server.userCache;
         server.client.whois(nick, function(info) {
           cache.set(nick, info);
           resolve(info);
@@ -154,7 +154,7 @@ Object.defineProperties(Connection.prototype, {
   },
 });
 
-var Message = function(from, to, content, server) {
+let Message = function(from, to, content, server) {
   this.from = from;
   this.to = to;
   this.content = content;
@@ -176,8 +176,8 @@ Message.prototype = {
       method = "say";
     }
 
-    var message = this;
-    var to = (message.pm || method != "say") ? message.from : message.to;
+    let message = this;
+    let to = (message.pm || method != "say") ? message.from : message.to;
 
     msg.forEach(function(row) {
       message.server[method || "say"].call(message.server, to, row);
@@ -199,7 +199,7 @@ Object.defineProperties(Message.prototype, {
   command: {
     get: function() {
       if (this.type == Message.COMMAND) {
-        var parts = this.content.split(" ", 1);
+        let parts = this.content.split(" ", 1);
         return parts[0].substring(1);
       }
     }
@@ -218,14 +218,14 @@ Object.defineProperties(Message.prototype, {
   },
 });
 
-var UserCache = function(server) {
+let UserCache = function(server) {
   this.decay = 30;
   this.users = {};
 };
 
 UserCache.prototype = {
   get: function(nick) {
-    var info = this.users[nick.toLowerCase()];
+    let info = this.users[nick.toLowerCase()];
 
     if (info) {
       if ((Date.now() - info.timestamp) < (this.decay * 1000)) {
@@ -244,7 +244,7 @@ UserCache.prototype = {
   },
 };
 
-var MessageQueue = function(options) {
+let MessageQueue = function(options) {
   this.queue = [];
   this.client = options.client;
   this.delay = options.interval;
@@ -257,7 +257,7 @@ MessageQueue.prototype = {
       throw new Error("Queue already active");
     }
 
-    var queue = this;
+    let queue = this;
     this.next();
 
     this.timer = setInterval(function() {
@@ -284,7 +284,7 @@ MessageQueue.prototype = {
     if (!this.queue.length) {
       return false;
     }
-    var message = this.queue.shift();
+    let message = this.queue.shift();
     this.client[message.method].call(this.client, message.to, message.content);
   }
 };
