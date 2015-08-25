@@ -2,6 +2,8 @@
  * Fetches page titles from links that are sent to channels.
  */
 
+"use strict";
+
 var entities = require("entities");
 var iconv = require("iconv-lite");
 var Promise = require("promise");
@@ -40,8 +42,6 @@ var PageTitle = {
             var data = iconv.decode(response.data, charset);
             var title = PageTitle.parseTitle(data);
 
-            // console.log("TITLE", response.data.toString("utf8"));
-
             if (title) {
               return resolve("> " + title);
             }
@@ -52,6 +52,8 @@ var PageTitle = {
   },
   parseTitle: function(html) {
     var title = html.match(/<title.*?>(.+)<\/title>/i);
+
+    console.log("LEN", title);
     return title ? entities.decodeHTML(title[1]) : null;
   },
 };

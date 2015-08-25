@@ -1,3 +1,4 @@
+"use strict";
 
 var http = require("http");
 var https = require("https");
@@ -23,8 +24,6 @@ module.exports = {
       info["user-agent"] = "Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20100101 Firefox/10.0";
 
       var client = info.protocol == "https:" ? https : http;
-
-      console.log("PROTOCOL", info.protocol == "https:" ? "https" : "http");
 
       var req = client.get(info, function(res) {
         var chunks = [];

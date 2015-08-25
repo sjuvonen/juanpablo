@@ -4,6 +4,8 @@
  * Events are read from an ICS file stored locally.
  */
 
+"use strict";
+
 var fs = require("fs");
 var ical = require("ical.js");
 var moment = require("moment");

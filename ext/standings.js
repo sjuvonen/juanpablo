@@ -4,6 +4,8 @@
  * Standings are parsed from formula1.com.
  */
 
+"use strict";
+
 var entities = require("entities");
 var htmlparser = require("htmlparser2");
 var Promise = require("promise");
@@ -16,7 +18,7 @@ exports.initialize = function(bot) {
     mode: Parser.READ_DRIVERS,
     url: bot.config.standings.drivers
   });
-  
+
   var teams = new Standings({
     net: net,
     mode: Parser.READ_TEAMS,
@@ -213,4 +215,3 @@ Parser.prototype = {
     });
   }
 };
-

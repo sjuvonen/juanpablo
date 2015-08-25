@@ -2,6 +2,8 @@
  * Follows RSS feeds and publishes new articles to channels.
  */
 
+ "use strict";
+
 var events = require("events");
 var FeedParser = require("feedparser");
 var Promise = require("promise");
