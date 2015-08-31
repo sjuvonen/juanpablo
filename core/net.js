@@ -59,7 +59,6 @@ module.exports = {
     let isGzip = this._isGzip;
     return new Promise(function(resolve, reject) {
       zlib.unzip(data, function(data) {
-        console.log("UNCOMP!", data);
         resolve(data);
       });
     });

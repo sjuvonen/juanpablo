@@ -52,8 +52,6 @@ let PageTitle = {
   },
   parseTitle: function(html) {
     let title = html.match(/<title.*?>(.+)<\/title>/i);
-
-    console.log("LEN", title);
     return title ? entities.decodeHTML(title[1]) : null;
   },
 };
