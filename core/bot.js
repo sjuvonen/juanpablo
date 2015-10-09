@@ -1,160 +1,332 @@
 "use strict";
 
 let events = require("events");
-let Promise = require("promise");
+let irc = require("irc");
+let path = require("path");
 let util = require("util");
 
-let commands = require("./commands");
-let files = require("./files");
-let irc = require("./irc");
-let modules = require("./modules");
-let netUtils = require("./net");
-
-let Bot = function(config) {
-  this.shared = {};
-  this.config = config;
-  this.servers = {};
-  this.events = new events.EventEmitter;
-  this.commands = new commands.Manager;
-
-  this.modules = new modules.Manager({
-    bot: this,
-    root: this.config.root,
-  });
-
-  this.config.files.root = this.config.root;
-  this.files = new files.Storage(this.config.files);
-
-  this.commands.events.on("commands.register", function(command) {
-    console.log("NEW COMMAND", command.name);
-  });
-
-  this.modules.events.on("modules.load", function(name) {
-    console.log("LOAD MODULE", name);
-  });
-
-  let bot = this;
-
-  this.addCommand("help", function() {
-    return new Promise(function(resolve, reject) {
-      let names = Object.keys(bot.commands.commands);
-      names.sort();
-
-      let message = "Commands: " + names.join(", ");
-      resolve(message);
-    });
-  });
+let proxy = function(callback, context) {
+  return function() {
+    callback.apply(context, arguments);
+  }
 };
 
-Bot.prototype = {
-  net: netUtils,
-  start: function() {
-    this.events.emit("debug.log", "Starting bot");
+class Bot {
+  constructor(config) {
+    this.config = config;
+    this.connections = new Map;
+    this.events = new events.EventEmitter;
+  }
 
-    let eventManager = this.events;
-    let moduleManager = this.modules;
-    let modules = this.config.modules.slice();
-
-    let loadNext = function() {
-      if (modules.length) {
-        let name = modules.shift();
-        moduleManager.load(name).then(loadNext, function(error) {
-          console.error("Failed to load module", name, error);
-          eventManager.emit("debug.log", "Failed to load module", name, error);
-          loadNext();
-        });
-      } else {
-        eventManager.emit("modules.ready");
-      }
-    };
-
-    loadNext();
-
-    this.config.servers.forEach(function(server) {
-      this.addConnection(server);
-    }, this);
-  },
-  addConnection: function(config) {
+  /**
+   * Starts the bot and handles all startup hazzle.
+   */
+  start() {
     let bot = this;
-    let connection = new irc.Connection(config);
-    this.servers[config.name] = connection;
+    return new Promise(resolve => {
+      bot.events.emit("start");
+      bot.connect();
 
-    connection.connect(function() {
-      console.log("connected", arguments.length);
-    });
+      setTimeout(resolve, 100);
+    })
+  }
 
-    connection.on("message", function(message) {
-      bot.events.emit("message", message);
-    });
+  /**
+   * Connect to servers and join channels.
+   */
+  connect() {
+    this.config.servers.forEach(this.addConnection, this);
+  }
 
-    connection.on("command", function(message) {
-      bot.commands.execute(message.command, message.user, message.commandParams).then(function(result) {
-        /*
-         * Resolved value can be one of the following:
-         *  - Error (exception)
-         *  - Array of strings
-         *  - Single string
-         *  - Special object that defines custom method for replying:
-         *    - message [again string or array of strings]
-         *    - method [say|notice]
-        */
+  addConnection(config) {
+    let bot = this;
+    let connection = new Connection(config);
+    this.connections.set(config.name, connection);
 
-        let reply, method;
+    return connection.connect();
+  }
+}
 
-        if (result instanceof Error) {
-          reply = result.toString();
-        } else if (typeof result == "string" || result instanceof Array) {
-          reply = result;
-        } else if (typeof result == "object") {
-          reply = result.message;
-          method = result.method;
-        }
-        message.reply(reply, method);
-      }, function(error) {
-        if (typeof error == "object") {
-          if (error instanceof Error && error.code == 123) {
-            error.message += " (see !help)";
-          }
-          error = error.toString();
-        }
-        message.reply(error);
+/**
+ * Connection to a server.
+ *
+ * Each connection handles its channels and messages autonomously.
+ */
+class Connection {
+  constructor(config) {
+    config.autoConnect = false;
+
+    this.config = config;
+    this.events = new events.EventEmitter;
+    this.channels = new Map;
+    this.messages = new MessageQueue;
+    this.messages.events.on("send", proxy(this.doSend, this));
+  }
+
+  /**
+   * Connect to the server and join the channels as per configuration.
+   */
+  connect() {
+    let connection = this;
+    return new Promise(resolve => {
+      connection.client.connect(5, raw => {
+        let data = {server: raw.server, nick: raw[0]};
+        connection.events.emit("connect", data);
+        resolve(data);
       });
     });
+  }
 
-    return connection;
-  },
-  addCommand: function(name, perms, callback) {
-    if (arguments.length == 2) {
-      callback = perms;
-      perms = commands.Command.ALLOW_ALL;
-    }
-    let command = new commands.Command(name, perms, callback);
-    this.commands.register(command);
-  },
-  spam: function(message) {
-    let bot = this;
-    Object.keys(this.servers).forEach(function(name) {
-      bot.servers[name].amsg(message);
-    });
-  },
-
-  on: function() {
-    this.events.on.apply(this.events, arguments);
-  },
-};
-
-Object.defineProperties(Bot.prototype, {
-  database: {
-    get: function() {
-      if (!("_db" in this)) {
-        let sqlite = require("sqlite3");
-        this._db = new sqlite.Database(this.files.toAbsolute("database.sqlite"));
+  /**
+   * Join one or multiple channels. Accepts a string or array of strings.
+   */
+  join(channels) {
+    let connection = this;
+    return new Promise(resolve => {
+      if (!Array.isArray(channels)) {
+        channels = [channels];
       }
-      return this._db;
+      connection.client.join(channels.join(","), (foo) => {
+        console.log("JOINED", foo);
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Queue a message to be sent to the server.
+   */
+  message(to, content) {
+    this.send("message", to, content);
+  }
+
+  /**
+   * Queue a notice to be sent to the server.
+   */
+  notice(to, content) {
+    this.send("notice", to, content);
+  }
+
+  /**
+   * Generic method for queueing any type of message to be sent to the server.
+   */
+  send(type, to, content) {
+    this.messages.send({to: to, content: content, type: type});
+  }
+
+  onError(raw) {
+    console.error("CONNECTION ERROR", raw);
+  }
+
+  onJoin(channel, nick, raw) {
+    if (nick == this.nick) {
+      console.log("JOINED", channel);
+      this.events.emit("join", {channel: channel});
     }
   }
-});
 
-module.exports = {
-  Bot: Bot,
-};
+  onMessage(nick, to, content, raw) {
+    let message = new Message(nick, to, content, raw);
+  }
+
+  onNotice(nick, to, content, raw) {
+
+  }
+
+  /**
+   * Send a message to the server instantly. Triggered by the queue's event listener.
+   */
+  doSend(type, to, content) {
+    this.client[type].call(this.client, to, content);
+  }
+
+  get client() {
+    if (!("_client" in this)) {
+      this._client = new irc.Client(this.host, this.nick, this.config);
+      this.client.message = this.client.say;
+
+      let connection = this;
+      let events = this.events;
+
+      this._client.on("error", function(raw) {
+        connection.onError(raw);
+      });
+
+      this._client.on("join", function(channel, nick, raw) {
+        connection.onJoin(channel, nick, raw);
+
+        setTimeout(function() {
+          connection.message(channel, "TEST ONE TWO " + channel);
+        }, 5000);
+      });
+
+      this._client.on("message", function(nick, to, content, raw) {
+        connection.onMessage(nick, to, content, raw);
+      });
+
+      this._client.on("notice", function(nick, to, message, raw) {
+        connection.onNotice(nick, to, message, raw);
+      });
+    }
+    return this._client;
+  }
+
+  get name() {
+    return this.config.name;
+  }
+
+  get host() {
+    return this.config.host;
+  }
+
+  get nick() {
+    return this.config.nick;
+  }
+}
+
+/**
+ * Message received from the server.
+ */
+class Message {
+  /**
+   * Type code for regular messages
+   */
+  static get MESSAGE() {
+    return 1;
+  };
+
+  /**
+   * Type code for bot commands
+   */
+  static get COMMAND() {
+    return 2;
+  };
+
+  constructor(from, to, content, connection) {
+    this.from = from;
+    this.to = to;
+    this.content = content;
+    this.connection = connection;
+  }
+
+  /**
+   * Send a response to where the original message came from (channel or user).
+   */
+  reply(reply) {
+    if (typeof reply != "object") {
+      reply = {
+        type: "message",
+        content: reply,
+      };
+    }
+    let to = reply.type == "notice" || this.pm ? this.from : this.to;
+    this.connection[reply.type || "message"].call(this.connection, to, reply.content);
+  }
+
+  get pm() {
+    // Message is a private message when target is not a channel
+    return ["#", "!"].indexOf(this.to[0]) == -1;
+  }
+
+  get type() {
+    return (this.content.length >= 3 && this.content[0] == "!" && this.content[1] != "!") ? Message.COMMAND : Message.MESSAGE;
+  }
+
+  get command() {
+    if (this.type == Message.COMMAND) {
+      return this.content.split(" ", 1)[0].substring(1);
+    }
+  }
+
+  get params() {
+    if (this.type == Message.COMMAND) {
+      return this.content.split(/\s+/).slice(1);
+    }
+  }
+}
+
+class Reply {
+  constructor(content, type) {
+    this.content = content;
+    this.type = type || "message";
+  }
+
+  toString() {
+
+  }
+}
+
+/**
+ * Takes care of delaying messages so that the bot won't flood the server.
+ *
+ * This implementation will not actually send anything by itself, instead
+ * the queue will trigger 'send' events that the backend should listen to.
+ */
+class MessageQueue {
+  constructor(config) {
+    this.config = config || {};
+    this.events = new events.EventEmitter;
+    this.messages = [];
+    this.timer = null;
+  }
+
+  /**
+   * Queues a message to be sent.
+   */
+  send(message) {
+    this.messages.push(message);
+    if (!this.started) {
+      this.start();
+    }
+  }
+
+  /**
+   * Triggers the next message with no delay and removes it from the queue.
+   */
+  next() {
+    if (this.length) {
+      let message = this.messages.shift();
+      this.events.emit("send", message.type, message.to, message.content);
+    }
+  }
+
+  /**
+   * Starts the queue.
+   */
+  start() {
+    let queue = this;
+    let next = function() {
+      if (queue.messages.length) {
+        queue.next();
+        queue.timer = setTimeout(next, queue.delay);
+      } else {
+        queue.stop();
+      }
+    };
+    next();
+  }
+
+  /**
+   * Stop queue; sending messages will halt instantly.
+   */
+  stop() {
+    if (this.started) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+
+  get delay() {
+    return this.config.delay || 1500;
+  }
+
+  get started() {
+    return this.timer != null;
+  }
+
+  get length() {
+    return this.messages.length;
+  }
+}
+
+exports.Bot = Bot;
