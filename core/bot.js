@@ -1,8 +1,8 @@
 "use strict";
 
-let events = require("events");
+let EventEmitter = require("events");
 let irc = require("irc");
-let path = require("path");
+let modules = require("./modules");
 let util = require("util");
 
 let proxy = function(callback, context) {
@@ -15,7 +15,7 @@ class Bot {
   constructor(config) {
     this.config = config;
     this.connections = new Map;
-    this.events = new events.EventEmitter;
+    this.events = new EventEmitter;
   }
 
   /**
@@ -39,11 +39,12 @@ class Bot {
   }
 
   addConnection(config) {
-    let bot = this;
-    let connection = new Connection(config);
-    this.connections.set(config.name, connection);
-
-    return connection.connect();
+    if (!("modules" in config)) {
+      config.modules = this.config.modules.slice();
+    }
+    return this.connections
+      .set(config.name, new Connection(config))
+      .get(config.name).connect();
   }
 }
 
@@ -57,10 +58,17 @@ class Connection {
     config.autoConnect = false;
 
     this.config = config;
-    this.events = new events.EventEmitter;
+    this.events = new EventEmitter;
     this.channels = new Map;
+
     this.messages = new MessageQueue;
     this.messages.events.on("send", proxy(this.doSend, this));
+
+    this.modules = new modules.ModuleManager({modules: this.config.modules});
+    this.modules.events.on("load", proxy(this.onLoadModule, this));
+
+    this.commands = new modules.CommandManager;
+    this.events.on("command", proxy(this.onCommand, this));
   }
 
   /**
@@ -69,6 +77,7 @@ class Connection {
   connect() {
     let connection = this;
     return new Promise(resolve => {
+      connection.modules.loadEnabledModules();
       connection.client.connect(5, raw => {
         let data = {server: raw.server, nick: raw[0]};
         connection.events.emit("connect", data);
@@ -86,8 +95,8 @@ class Connection {
       if (!Array.isArray(channels)) {
         channels = [channels];
       }
-      connection.client.join(channels.join(","), (foo) => {
-        console.log("JOINED", foo);
+      connection.client.join(channels.join(","), (raw) => {
+        this.nick = raw.nick;
         resolve();
       });
     });
@@ -114,46 +123,55 @@ class Connection {
     this.messages.send({to: to, content: content, type: type});
   }
 
-  onError(raw) {
-    console.error("CONNECTION ERROR", raw);
-  }
-
-  onJoin(channel, nick, raw) {
-    if (nick == this.nick) {
-      console.log("JOINED", channel);
-      this.events.emit("join", {channel: channel});
-    }
-  }
-
-  onMessage(nick, to, content, raw) {
-    let message = new Message(nick, to, content, raw);
-  }
-
-  onNotice(nick, to, content, raw) {
-
+  addCommand(name, permissions, callback) {
+    this.commands.add.apply(this.commands, arguments);
   }
 
   /**
    * Send a message to the server instantly. Triggered by the queue's event listener.
    */
   doSend(type, to, content) {
+    if (type == "message") {
+      type = "say";
+    }
     this.client[type].call(this.client, to, content);
+  }
+
+  onLoadModule(module) {
+    module.configure(this);
+  }
+
+  onCommand(message) {
+    let command = this.commands.get(message.command);
+    command.access(message.user).then(() => {
+      command.execute(message.user, message.params).then(result => {
+        console.log("Command ok", result);
+        message.reply(result);
+      }, error => {
+        console.log("ERROR2", error);
+      });
+    }, error => {
+      console.error("ERROR", error);
+    });
   }
 
   get client() {
     if (!("_client" in this)) {
       this._client = new irc.Client(this.host, this.nick, this.config);
-      this.client.message = this.client.say;
+      // this.client.message = this.client.say;
 
       let connection = this;
       let events = this.events;
 
       this._client.on("error", function(raw) {
-        connection.onError(raw);
+        events.emit("error", raw);
       });
 
       this._client.on("join", function(channel, nick, raw) {
-        connection.onJoin(channel, nick, raw);
+        if (nick == connection.nick) {
+          console.log("JOINED", channel);
+          events.emit("join", {channel: channel});
+        }
 
         setTimeout(function() {
           connection.message(channel, "TEST ONE TWO " + channel);
@@ -161,11 +179,12 @@ class Connection {
       });
 
       this._client.on("message", function(nick, to, content, raw) {
-        connection.onMessage(nick, to, content, raw);
+        let message = new Message(raw, connection);
+        events.emit(message.type == Message.MESSAGE ? "message" : "command", message);
       });
 
       this._client.on("notice", function(nick, to, message, raw) {
-        connection.onNotice(nick, to, message, raw);
+        events.emit("notice", {nick: nick, to: to, message: message});
       });
     }
     return this._client;
@@ -180,7 +199,11 @@ class Connection {
   }
 
   get nick() {
-    return this.config.nick;
+    return this._nick || this.config.nick;
+  }
+
+  set nick(nick) {
+    this._nick = nick;
   }
 }
 
@@ -202,10 +225,8 @@ class Message {
     return 2;
   };
 
-  constructor(from, to, content, connection) {
-    this.from = from;
-    this.to = to;
-    this.content = content;
+  constructor(meta, connection) {
+    this.meta = meta;
     this.connection = connection;
   }
 
@@ -220,7 +241,24 @@ class Message {
       };
     }
     let to = reply.type == "notice" || this.pm ? this.from : this.to;
+    console.log("send reply", reply);
     this.connection[reply.type || "message"].call(this.connection, to, reply.content);
+  }
+
+  get nick() {
+    return this.meta.nick;
+  }
+
+  get to() {
+    return this.meta.args[0];
+  }
+
+  get host() {
+    return this.meta.host;
+  }
+
+  get content() {
+    return this.meta.args[1];
   }
 
   get pm() {
@@ -265,7 +303,7 @@ class Reply {
 class MessageQueue {
   constructor(config) {
     this.config = config || {};
-    this.events = new events.EventEmitter;
+    this.events = new EventEmitter;
     this.messages = [];
     this.timer = null;
   }
