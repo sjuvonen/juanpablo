@@ -66,6 +66,7 @@ class Download {
    */
   static request(url) {
     let info = Download.parseUrl(url);
+    info["headers"] = {"user-agent": "Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20100101 Firefox/10.0"};
     let client = info.protocol == "https:" ? https : http;
     let request = client.get(info);
     return request;
