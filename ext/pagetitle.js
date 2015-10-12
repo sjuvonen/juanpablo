@@ -4,6 +4,7 @@ let entities = require("entities");
 let iconv = require("iconv-lite");
 let net = require("../core/net");
 let proxy = require("../core/proxy.js");
+let util = require("util");
 let zlib = require("zlib");
 
 class PageTitle {
@@ -27,15 +28,28 @@ class PageTitle {
   fetchTitle(url) {
     let pagetitle = this;
     return new Promise((resolve, reject) => {
-      let request = net.request(url);
-      request.on("response", response => {
+      let download = net.request(url);
+      download.on("response", response => {
+        try {
         let headers = response.headers;
-        if (!("content-type" in headers && headers["content-type"].match("html"))) {
-          request.abort();
+
+        if ("content-type" in headers) {
+          if (headers["content-type"].match("html")) {
+            return;
+          }
+
+          download.abort();
+
+          if (headers["content-type"].match("image|audio  ")) {
+            pagetitle.parseTypeInfo(response).then(resolve, reject);
+          }
         }
+      } catch (err) {
+        console.error("errrrr", err);
+      }
       });
 
-      request.start().then(response => {
+      download.start().then(response => {
         this.decodeResponse(response).then(content => {
           let title = this.parseTitle(content);
           if (title) {
@@ -43,6 +57,15 @@ class PageTitle {
           }
         });
       });
+    });
+  }
+
+  parseTypeInfo(response) {
+    return new Promise((resolve, reject) => {
+      let mime = response.headers["content-type"];
+      let type = mime.substring(0, mime.indexOf("/"));
+      let size = response.headers["content-length"];
+      resolve(util.format("%s file (%d MB)", type, Math.round(size / 1000) / 1000));
     });
   }
 
