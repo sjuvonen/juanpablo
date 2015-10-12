@@ -87,6 +87,7 @@ class Download {
             let redirect = urllib.resolve(download.url, response.headers.location);
             return get(Download.request(redirect));
           } else {
+            download.events.emit("response", response);
             download.response = response
             resolve(response);
           }
