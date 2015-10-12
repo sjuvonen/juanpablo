@@ -64,7 +64,7 @@ class Connection {
     this.messages = new MessageQueue;
     this.messages.events.on("send", proxy(this.doSend, this));
 
-    this.modules = new modules.ModuleManager({modules: this.config.modules});
+    this.modules = new modules.ModuleManager(this, {modules: this.config.modules});
     this.modules.events.on("load", proxy(this.onLoadModule, this));
 
     this.commands = new modules.CommandManager;
@@ -135,10 +135,6 @@ class Connection {
       type = "say";
     }
     this.client[type].call(this.client, to, content);
-  }
-
-  onLoadModule(module) {
-    module.configure(this);
   }
 
   onCommand(message) {
@@ -241,7 +237,6 @@ class Message {
       };
     }
     let to = reply.type == "notice" || this.pm ? this.from : this.to;
-    console.log("send reply", reply);
     this.connection[reply.type || "message"].call(this.connection, to, reply.content);
   }
 
@@ -355,7 +350,7 @@ class MessageQueue {
   }
 
   get delay() {
-    return this.config.delay || 1500;
+    return this.config.delay || 1200;
   }
 
   get started() {
