@@ -5,7 +5,8 @@ let pathutil = require("path");
 let util = require("util");
 
 class ModuleManager {
-  constructor(config) {
+  constructor(connection, config) {
+    this.connection = connection;
     this.config = config;
     this.events = new EventEmitter;
     this.modules = new Map;
@@ -18,9 +19,11 @@ class ModuleManager {
   load(name) {
     let manager = this;
     return new Promise(resolve => {
+      console.log("load", name);
       let path = pathutil.resolve(name);
-      let module = require(path).configure(this);
-      manager.events.emit("load", module);
+      let instance = require(path).configure(this.connection, this);
+      manager.modules.set(name, instance);
+      manager.events.emit("load", instance);
     });
   }
 
