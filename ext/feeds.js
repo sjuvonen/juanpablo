@@ -11,14 +11,9 @@ let util = require("util");
 let proxy = require("../core/proxy");
 
 exports.configure = function(connection) {
-  try {
-    let feeds = new FeedManager(connection, connection.config.modules.feeds);
-    feeds.watch();
-
-    return feeds;
-  } catch (error) {
-    console.error(error);
-  }
+  let feeds = new FeedManager(connection, connection.config.modules.feeds);
+  feeds.watch();
+  return feeds;
 };
 
 class FeedManager {
