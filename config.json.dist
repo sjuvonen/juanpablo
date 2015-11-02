@@ -11,63 +11,65 @@
       ]
     }
   ],
-  "modules": [
-    "./ext/pagetitle",
-    "./ext/events",
-    "./ext/standings",
-    "./ext/feeds",
-    "./ext/betgame"
-  ],
-  "files": {
-    "storage": "./data"
-  },
-  "events": {
-    "file": "./data/season2015.ics"
-  },
-  "standings": {
-    "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2015-driver-standings.html",
-    "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2015-constructor-standings.html"
-  },
-  "feeds": {
-    "refresh": 600,
-    "publish": 60,
-    "sources": [
-      {
-        "name": "Autosport",
-        "url": "http://www.autosport.com/rss/f1news.xml"
-      },
-      {
-        "name": "F1Fanatic",
-        "url": "http://www.f1fanatic.co.uk/feed/"
-      },
-      {
-        "name": "BBC",
-        "url": "http://feeds.bbci.co.uk/sport/0/formula1/rss.xml"
-      },
-      {
-        "name": "James Allen",
-        "url": "http://www.jamesallenonf1.com/feed/"
-      },
-      {
-        "name": "F1 Technical",
-        "url": "http://www.f1technical.net/rss/news.xml"
-      },
-      {
-        "name": "F1 Technical",
-        "url": "http://www.f1technical.net/rss/articles.xml"
-      },
-      {
-        "name": "Motosport",
-        "url": "http://www.motorsport.com/rss/category/f1/news"
-      },
-      {
-        "name": "GP247",
-        "url": "http://www.grandprix247.com/feed/"
-      }
-    ]
-  },
-  "betgame": {
-    "results": "https://en.wikipedia.org/wiki/2015_Formula_One_season",
-    "baseurl": "https://en.wikipedia.org"
+  "modules": {
+    "enabled": [
+      "./ext/pagetitle",
+      "./ext/events",
+      "./ext/standings",
+      "./ext/feeds",
+      "./ext/betgame"
+    ],
+    "files": {
+      "storage": "./data"
+    },
+    "events": {
+      "file": "./data/season2015.ics"
+    },
+    "standings": {
+      "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2015-driver-standings.html",
+      "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2015-constructor-standings.html"
+    },
+    "feeds": {
+      "refresh": 600,
+      "publish": 60,
+      "sources": [
+        {
+          "name": "Autosport",
+          "url": "http://www.autosport.com/rss/f1news.xml"
+        },
+        {
+          "name": "F1Fanatic",
+          "url": "http://www.f1fanatic.co.uk/feed/"
+        },
+        {
+          "name": "BBC",
+          "url": "http://feeds.bbci.co.uk/sport/0/formula1/rss.xml"
+        },
+        {
+          "name": "James Allen",
+          "url": "http://www.jamesallenonf1.com/feed/"
+        },
+        {
+          "name": "F1 Technical",
+          "url": "http://www.f1technical.net/rss/news.xml"
+        },
+        {
+          "name": "F1 Technical",
+          "url": "http://www.f1technical.net/rss/articles.xml"
+        },
+        {
+          "name": "Motosport",
+          "url": "http://www.motorsport.com/rss/category/f1/news"
+        },
+        {
+          "name": "GP247",
+          "url": "http://www.grandprix247.com/feed/"
+        }
+      ]
+    },
+    "betgame": {
+      "results": "https://en.wikipedia.org/wiki/2015_Formula_One_season",
+      "baseurl": "https://en.wikipedia.org"
+    }
   }
 }

@@ -40,7 +40,7 @@ class Bot {
 
   addConnection(config) {
     if (!("modules" in config)) {
-      config.modules = this.config.modules.slice();
+      config.modules = Object.create(this.config.modules);
     }
     return this.connections
       .set(config.name, new Connection(config))
@@ -59,12 +59,12 @@ class Connection {
 
     this.config = config;
     this.events = new EventEmitter;
-    this.channels = new Map;
+    this.channels = new Set;
 
     this.messages = new MessageQueue;
     this.messages.events.on("send", proxy(this.doSend, this));
 
-    this.modules = new modules.ModuleManager(this, {modules: this.config.modules});
+    this.modules = new modules.ModuleManager(this, {modules: this.config.modules.enabled});
     this.modules.events.on("load", proxy(this.onLoadModule, this));
 
     this.commands = new modules.CommandManager;
@@ -75,12 +75,11 @@ class Connection {
    * Connect to the server and join the channels as per configuration.
    */
   connect() {
-    let connection = this;
     return new Promise(resolve => {
-      connection.modules.loadEnabledModules();
-      connection.client.connect(5, raw => {
+      this.modules.loadEnabledModules();
+      this.client.connect(5, raw => {
         let data = {server: raw.server, nick: raw[0]};
-        connection.events.emit("connect", data);
+        this.events.emit("connect", data);
         resolve(data);
       });
     });
@@ -90,12 +89,11 @@ class Connection {
    * Join one or multiple channels. Accepts a string or array of strings.
    */
   join(channels) {
-    let connection = this;
     return new Promise(resolve => {
       if (!Array.isArray(channels)) {
         channels = [channels];
       }
-      connection.client.join(channels.join(","), (raw) => {
+      this.client.join(channels.join(","), (raw) => {
         this.nick = raw.nick;
         resolve();
       });
@@ -107,6 +105,15 @@ class Connection {
    */
   message(to, content) {
     this.send("message", to, content);
+  }
+
+  /**
+   * Message all channels.
+   */
+  amsg(message) {
+    this.channels.forEach(channel => {
+      this.message(channel, message);
+    });
   }
 
   /**
@@ -154,33 +161,29 @@ class Connection {
   get client() {
     if (!("_client" in this)) {
       this._client = new irc.Client(this.host, this.nick, this.config);
-      // this.client.message = this.client.say;
 
-      let connection = this;
-      let events = this.events;
-
-      this._client.on("error", function(raw) {
-        events.emit("error", raw);
+      this._client.on("error", raw => {
+        this.events.emit("error", raw);
       });
 
-      this._client.on("join", function(channel, nick, raw) {
-        if (nick == connection.nick) {
-          console.log("JOINED", channel);
-          events.emit("join", {channel: channel});
+      this._client.on("join", (channel, nick, raw) => {
+        if (nick == this.nick) {
+          this.channels.add(channel.toLowerCase());
         }
-
-        setTimeout(function() {
-          connection.message(channel, "TEST ONE TWO " + channel);
-        }, 5000);
+        this.events.emit("join", {
+          server: raw.server,
+          nick: nick,
+          channel: channel,
+        });
       });
 
-      this._client.on("message", function(nick, to, content, raw) {
-        let message = new Message(raw, connection);
-        events.emit(message.type == Message.MESSAGE ? "message" : "command", message);
+      this._client.on("message", (nick, to, content, raw) => {
+        let message = new Message(raw, this);
+        this.events.emit(message.type == Message.MESSAGE ? "message" : "command", message);
       });
 
-      this._client.on("notice", function(nick, to, message, raw) {
-        events.emit("notice", {nick: nick, to: to, message: message});
+      this._client.on("notice", (nick, to, message, raw) => {
+        this.events.emit("notice", {nick: nick, to: to, message: message});
       });
     }
     return this._client;
