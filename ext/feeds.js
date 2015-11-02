@@ -156,7 +156,7 @@ class Feed {
       parser.on("readable", () => {
         let item;
         while (item = parser.read()) {
-          if (updated < item.pubDate && !this.cache.has(item.title)) {
+          if (updated < item.pubDate && !this.cache.has(item.title.substring(0, 30).toLowerCase())) {
             this.events.emit("article", {
               source: this.name,
               title: item.title,
