@@ -168,8 +168,11 @@ class Feed {
         }
       });
 
+      let cache_expiry = new Date;
+      cache_expiry.setHours(cache_expiry.getHours() - 1);
+
       this.cache.forEach((expires, key) => {
-        if (expires < last_update) {
+        if (expires < cache_expiry) {
           this.cache.delete(key);
         }
       });
