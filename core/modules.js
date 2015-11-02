@@ -24,6 +24,8 @@ class ModuleManager {
       let instance = require(path).configure(this.connection, this);
       manager.modules.set(name, instance);
       manager.events.emit("load", instance);
+    }, error => {
+      console.error("modules:", error.stack);
     });
   }
 
