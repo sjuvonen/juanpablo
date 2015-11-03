@@ -40,7 +40,7 @@ class CommandManager {
     this.commands = new Map;
 
     this.add("help", () => {
-      let keys = [...this.commands.keys()];
+      let keys = [...this.commands.keys()].sort();
       return Promise.accept("Available commands: " + keys.join(", "));
     });
   }

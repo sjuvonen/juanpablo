@@ -231,6 +231,9 @@ class Message {
    * Send a response to where the original message came from (channel or user).
    */
   reply(reply) {
+    if (Array.isArray(reply)) {
+      return reply.forEach(proxy(this.reply, this));
+    }
     if (typeof reply != "object") {
       reply = {
         type: "message",
@@ -351,7 +354,7 @@ class MessageQueue {
   }
 
   get delay() {
-    return this.config.delay || 1200;
+    return this.config.delay || 1500;
   }
 
   get started() {
