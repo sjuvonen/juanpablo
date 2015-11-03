@@ -70,7 +70,7 @@ class EventCalendar {
         }
       }
     }
-  },
+  }
 
   findNext(type) {
     let now = new Date;
