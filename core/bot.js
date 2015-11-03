@@ -2,6 +2,7 @@
 
 let EventEmitter = require("events");
 let irc = require("irc");
+let CommandManager = require("./commands").CommandManager;
 let modules = require("./modules");
 let util = require("util");
 let proxy = require("./proxy");
@@ -37,6 +38,7 @@ class Bot {
     if (!("modules" in config)) {
       config.modules = Object.create(this.config.modules);
     }
+    config.database = Object.create(this.config.database);
     return this.connections
       .set(config.name, new Connection(config))
       .get(config.name).connect();
@@ -62,7 +64,7 @@ class Connection {
     this.modules = new modules.ModuleManager(this, {modules: this.config.modules.enabled});
     // this.modules.events.on("load", proxy(this.onLoadModule, this));
 
-    this.commands = new modules.CommandManager;
+    this.commands = new CommandManager;
     this.events.on("command", proxy(this.onCommand, this));
   }
 
@@ -146,7 +148,7 @@ class Connection {
         command.execute(message.user, message.params).then(result => {
           message.reply(result);
         }, error => {
-          console.error("onCommand:", error.stack);
+          message.reply(error.toString());
         });
       }, error => {
         console.error("onCommand:", error.stack);
