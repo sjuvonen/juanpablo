@@ -535,10 +535,10 @@ exports.configure = function(connection, modules) {
     return new Promise((resolve, reject) => {
       if (params.length) {
         if (params[0] == "last") {
-          params[0] = races.lastRace.round;
+          params[0] = seasoncalendar.lastRace.round;
         }
 
-        let race = races.race(params[0]);
+        let race = seasoncalendar.race(params[0]);
 
         if (!race) {
           return resolve("Invalid round " + params[0]);
@@ -562,7 +562,7 @@ exports.configure = function(connection, modules) {
           let line = points.map((row, i) => {
             return util.format("%s %d", row.nick, row.points);
           }).join("; ");
-          let race = races.race(points[0].round);
+          let race = seasoncalendar.race(points[0].round);
           resolve({
             message: util.format("Points after %s: %s", race.title, line),
             method: "notice",
