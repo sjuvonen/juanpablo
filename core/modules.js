@@ -20,7 +20,7 @@ class ModuleManager {
     return new Promise(resolve => {
       console.log("load", name);
       let path = pathutil.resolve(name);
-      let instance = require(path).configure(this.connection, this.config);
+      let instance = require(path).configure(this.connection, this);
       this.modules.set(name, instance);
       this.events.emit("load", instance);
     }).catch(error => {
