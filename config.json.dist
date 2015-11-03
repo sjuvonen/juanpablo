@@ -11,6 +11,11 @@
       ]
     }
   ],
+  "database": {
+    "sqlite": {
+      "file": "data/database.sqlite"
+    }
+  },
   "modules": {
     "enabled": [
       "./ext/pagetitle",
