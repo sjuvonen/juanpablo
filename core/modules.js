@@ -39,14 +39,8 @@ class CommandManager {
     this.events = new EventEmitter;
     this.commands = new Map;
 
-    let commands = this.commands;
     this.add("help", () => {
-      let keys = [];
-      for (let key of commands.keys()) {
-        if (key != "help") {
-          keys.push(key);
-        }
-      }
+      let keys = [...this.commands.keys()];
       return Promise.accept("Available commands: " + keys.join(", "));
     });
   }

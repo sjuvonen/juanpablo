@@ -22,7 +22,7 @@
     "files": {
       "storage": "./data"
     },
-    "events": {
+    "seasoncalendar": {
       "file": "./data/season2015.ics"
     },
     "standings": {

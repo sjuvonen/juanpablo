@@ -140,17 +140,20 @@ class Connection {
   }
 
   onCommand(message) {
-    let command = this.commands.get(message.command);
-    command.access(message.user).then(() => {
-      command.execute(message.user, message.params).then(result => {
-        console.log("Command ok", result);
-        message.reply(result);
+    try {
+      let command = this.commands.get(message.command);
+      command.access(message.user).then(() => {
+        command.execute(message.user, message.params).then(result => {
+          message.reply(result);
+        }, error => {
+          console.error("onCommand:", error.stack);
+        });
       }, error => {
-        console.log("ERROR2", error);
+        console.error("onCommand:", error.stack);
       });
-    }, error => {
-      console.error("ERROR", error);
-    });
+    } catch (error) {
+      message.reply(error.toString());
+    }
   }
 
   get client() {
