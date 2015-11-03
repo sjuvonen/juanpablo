@@ -4,12 +4,7 @@ let EventEmitter = require("events");
 let irc = require("irc");
 let modules = require("./modules");
 let util = require("util");
-
-let proxy = function(callback, context) {
-  return function() {
-    callback.apply(context, arguments);
-  }
-};
+let proxy = require("./proxy");
 
 class Bot {
   constructor(config) {
