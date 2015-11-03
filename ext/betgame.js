@@ -556,6 +556,8 @@ exports.configure = function(connection, modules) {
           } else {
             resolve("No data for " + race.title);
           }
+        }, error => {
+          console.error("betgame.top:", error);
         });
       } else {
         game.topScores().then(points => {
@@ -568,7 +570,7 @@ exports.configure = function(connection, modules) {
             type: "notice",
           });
         }, error => {
-          console.error("betgame.top", error);
+          console.error("betgame.top:", error);
         });
       }
     });
