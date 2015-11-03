@@ -7,10 +7,6 @@ let util = require("util");
 
 let proxy = function(callback, context) {
   return function() {
-    if (!callback) {
-      console.error("----- ERROR -----");
-      console.error(callback, context);
-    }
     callback.apply(context, arguments);
   }
 };
