@@ -61,6 +61,17 @@ class EventCalendar {
     }, moment(race.date).add(1.5, "hours").diff());
   }
 
+  race(num) {
+    for (let i = 0; i < this.calendar.length; i++) {
+      let event = this.calendar[i];
+      if (event.type == EventInfo.RACE) {
+        if (--num == 0) {
+          return event;
+        }
+      }
+    }
+  },
+
   findNext(type) {
     let now = new Date;
     for (let i = 0; i < this.calendar.length; i++) {
