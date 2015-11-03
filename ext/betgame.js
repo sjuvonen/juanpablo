@@ -373,7 +373,7 @@ class BetGame {
 
   topScores() {
     return new Promise((resolve, reject) => {
-      return game.scores().then(scores => {
+      return this.scores().then(scores => {
         let max_round = scores.reduce(((max, row) => Math.max(max, row.round)), 0);
 
         scores.forEach(row => {
@@ -618,4 +618,6 @@ exports.configure = function(connection, modules) {
   setTimeout(() => {
     game.updateScores();
   }, 5000);
+
+  return game;
 };
