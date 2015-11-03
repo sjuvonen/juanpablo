@@ -1,7 +1,10 @@
 "use strict";
 
-let config = require("./config");
-config.root = __dirname;
+let Bot = require("./core/bot").Bot;
+let bot = new Bot(require("./config"));
 
-let bot = new (require("./core/bot").Bot)(config);
-bot.start();
+bot.start().then(() => {
+  console.log("Bot started...");
+}, error => {
+  console.error("Bot crashed", error);
+});
