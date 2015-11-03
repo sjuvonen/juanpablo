@@ -31,22 +31,22 @@ class PageTitle {
       let download = net.request(url);
       download.on("response", response => {
         try {
-        let headers = response.headers;
+          let headers = response.headers;
 
-        if ("content-type" in headers) {
-          if (headers["content-type"].match("html")) {
-            return;
+          if ("content-type" in headers) {
+            if (headers["content-type"].match("html")) {
+              return;
+            }
+
+            download.abort();
+
+            if (headers["content-type"].match("image|audio  ")) {
+              pagetitle.parseTypeInfo(response).then(resolve, reject);
+            }
           }
-
-          download.abort();
-
-          if (headers["content-type"].match("image|audio  ")) {
-            pagetitle.parseTypeInfo(response).then(resolve, reject);
-          }
+        } catch (error) {
+          console.error("pagetitle.fetchtitle:", error);
         }
-      } catch (err) {
-        console.error("errrrr", err);
-      }
       });
 
       download.start().then(response => {
@@ -75,7 +75,7 @@ class PageTitle {
         let charset = response.headers["content-type"].match(/charset=\b(.+)\b/);
         charset = charset ? charset[1] : "UTF-8";
         if (charset) {
-          let data = iconv.decode(content.slice(0, 800), charset);
+          let data = iconv.decode(content.slice(0, 30000), charset);
           resolve(data);
         }
       }
