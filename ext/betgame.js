@@ -550,22 +550,22 @@ exports.configure = function(connection, modules) {
               return util.format("%s %d", row.nick, row.points);
             }).join("; ");
             resolve({
-              message: util.format("Points for %s: %s", race.title, line),
-              method: "notice",
+              content: util.format("Points for %s: %s", race.title, line),
+              type: "notice",
             });
           } else {
             resolve("No data for " + race.title);
           }
         });
       } else {
-        game.topScores().then((points) => {
+        game.topScores().then(points => {
           let line = points.map((row, i) => {
             return util.format("%s %d", row.nick, row.points);
           }).join("; ");
           let race = seasoncalendar.race(points[0].round);
           resolve({
-            message: util.format("Points after %s: %s", race.title, line),
-            method: "notice",
+            content: util.format("Points after %s: %s", race.title, line),
+            type: "notice",
           });
         }, error => {
           console.error("betgame.top", error);
