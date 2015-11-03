@@ -7,6 +7,10 @@ let util = require("util");
 
 let proxy = function(callback, context) {
   return function() {
+    if (!callback) {
+      console.error("----- ERROR -----");
+      console.error(callback, context);
+    }
     callback.apply(context, arguments);
   }
 };
@@ -65,7 +69,7 @@ class Connection {
     this.messages.events.on("send", proxy(this.doSend, this));
 
     this.modules = new modules.ModuleManager(this, {modules: this.config.modules.enabled});
-    this.modules.events.on("load", proxy(this.onLoadModule, this));
+    // this.modules.events.on("load", proxy(this.onLoadModule, this));
 
     this.commands = new modules.CommandManager;
     this.events.on("command", proxy(this.onCommand, this));

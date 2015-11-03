@@ -17,13 +17,12 @@ class ModuleManager {
   }
 
   load(name) {
-    let manager = this;
     return new Promise(resolve => {
       console.log("load", name);
       let path = pathutil.resolve(name);
-      let instance = require(path).configure(this.connection, this);
-      manager.modules.set(name, instance);
-      manager.events.emit("load", instance);
+      let instance = require(path).configure(this.connection, this.config);
+      this.modules.set(name, instance);
+      this.events.emit("load", instance);
     }).catch(error => {
       console.error("modules:", error.stack);
       return error;

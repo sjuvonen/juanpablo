@@ -70,12 +70,9 @@ class FeedManager {
   }
 
   publishNext() {
-    console.log("publish", this.queue.length);
     if (this.queue.length) {
       let article = this.queue.shift();
       let message = this.formatArticle(article);
-
-      console.log("amsg", message);
       this.connection.amsg(message);
     }
   }
@@ -110,7 +107,6 @@ class FeedManager {
       this._feeds.push(feed);
 
       feed.on("article", item => {
-        console.log("GOT ARTICLE");
         this.enqueue(item);
       });
     });
