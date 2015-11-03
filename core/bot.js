@@ -138,6 +138,7 @@ class Connection {
     if (type == "message") {
       type = "say";
     }
+    console.log("MSG", to, content);
     this.client[type].call(this.client, to, content);
   }
 
@@ -242,8 +243,13 @@ class Message {
         content: reply,
       };
     }
-    let to = reply.type == "notice" || this.pm ? this.from : this.to;
-    this.connection[reply.type || "message"].call(this.connection, to, reply.content);
+    let to = (reply.type == "notice" || this.pm) ? this.nick : this.to;
+
+    try {
+      this.connection[reply.type || "message"].call(this.connection, to, reply.content);
+    } catch (error) {
+      console.error("message.reply:", error.stack);
+    }
   }
 
   get nick() {
