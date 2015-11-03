@@ -5,13 +5,13 @@
   "private": true,
   "dependencies": {
     "entities": "^1.1.1",
-    "feedparser": "^1.1.3",
+    "feedparser": "^1.1.4",
     "htmlparser2": "^3.8.3",
     "ical.js": "^1.1.2",
     "iconv-lite": "^0.4.13",
     "irc": "^0.4.0",
     "moment": "^2.10.6",
-    "request": "^2.64.0",
-    "sqlite3": "^3.1.0"
+    "request": "^2.65.0",
+    "sqlite3": "^3.1.1"
   }
 }
