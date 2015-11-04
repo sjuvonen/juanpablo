@@ -147,14 +147,15 @@ class Feed {
       parser.on("readable", () => {
         let item;
         while (item = parser.read()) {
-          if (updated < item.pubDate && !this.cache.has(item.title.substring(0, 30).toLowerCase())) {
+          let cache_key = item.title.substring(0, 30).toLowerCase();
+          if (updated < item.pubDate && !this.cache.has(cache_key)) {
             this.events.emit("article", {
               source: this.name,
               title: item.title,
               date: item.pubDate,
               link: item.link,
             });
-            this.cache.set(item.title, new Date);
+            this.cache.set(cache_key, new Date);
           }
         }
       });
