@@ -138,7 +138,6 @@ class Connection {
     if (type == "message") {
       type = "say";
     }
-    console.log("MSG", to, content);
     this.client[type].call(this.client, to, content);
   }
 
