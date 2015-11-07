@@ -76,7 +76,14 @@ class ChannelLogger {
           user.whois().then(() => {
             this.findOrCreateUser(user.nick, user.user, user.host, user.account).then(raw => {
               user.id = raw.id;
-              write(user, event.channel, event.message);
+
+              if (event.channel) {
+                write(user, event.channel, event.message);
+              } else if (event.channels) {
+                event.channels.forEach(channel => {
+                  write(user, channel, event.message);
+                });
+              }
             }, error => {
               console.error("chanlog.onEvent.create", error.stack);
             });

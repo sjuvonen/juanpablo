@@ -243,7 +243,12 @@ class Connection {
     this.whoisCache = new UserCache({expire: 300});
     this.userCache = new UserCache({expire: 300});
 
-    this.events.on("error", error => console.error("connection.error:", error));
+    /**
+     * NOTE: EventEmitter requires at least one error listener or *crash*
+     */
+    this.events.on("error", raw => {
+      // console.error("connection.error:", raw);
+    });
   }
 
   /**
@@ -451,7 +456,7 @@ class Connection {
       });
 
       this._client.on("quit", (nick, reason, channels, raw) => {
-        this.events.emit("kick", {
+        this.events.emit("quit", {
           // nick: nick,
           user: this.userCache.findOrCreate(raw, this),
           reason: reason,
