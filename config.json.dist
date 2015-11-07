@@ -1,14 +1,12 @@
 {
   "servers": [
     {
-      "name": "foobar",
-      "host": "irc.foobar.net",
-      "nick": "MyBot",
+      "name": "test_server",
+      "host": "irc.myserver.com",
+      "nick": "testbot",
       "userName": "bot",
       "realName": "I am a bot",
-      "channels": [
-        "#foobar"
-      ]
+      "channels": ["#foobar"]
     }
   ],
   "database": {
@@ -19,10 +17,11 @@
   "modules": {
     "enabled": [
       "./ext/pagetitle",
-      "./ext/events",
-      "./ext/standings",
       "./ext/feeds",
-      "./ext/betgame"
+      "./ext/seasoncalendar",
+      "./ext/standings",
+      "./ext/betgame",
+      "./ext/chanlog"
     ],
     "files": {
       "storage": "./data"
@@ -35,8 +34,8 @@
       "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2015-constructor-standings.html"
     },
     "feeds": {
-      "refresh": 600,
-      "publish": 60,
+      "refresh": 300,
+      "publish": 10,
       "sources": [
         {
           "name": "Autosport",
@@ -75,6 +74,13 @@
     "betgame": {
       "results": "https://en.wikipedia.org/wiki/2015_Formula_One_season",
       "baseurl": "https://en.wikipedia.org"
+    },
+    "chanlog": {
+      "database": {
+        "sqlite": {
+          "file": "data/chanlog.sqlite"
+        }
+      }
     }
   }
 }
