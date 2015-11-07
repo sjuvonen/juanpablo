@@ -47,28 +47,87 @@ class Bot {
 
 class UserCache {
   constructor(config) {
-    this.cache = new Map;
+    this.nickCache = new Map;
+    this.hostCache = new Map;
+    this.authCache = new Map;
+
     this.config = config || {};
     this.timers = {};
 
-    if (this.config.expire > 0) {
-      this.timers.expire = setInterval(() => {
-        let now = new Date;
-        this.cache.forEach((info, nick) => {
-          if (now - info.timestamp > (this.config.expire * 1000)) {
-            this.cache.delete(nick);
-          }
-        })
-      }, this.config.expire);
+    // if (this.config.expire > 0) {
+    //   this.timers.expire = setInterval(() => {
+    //     let now = new Date;
+    //     this.cache.forEach((info, nick) => {
+    //       if (now - info.timestamp > (this.config.expire * 1000)) {
+    //         this.cache.delete(nick);
+    //       }
+    //     })
+    //   }, this.config.expire);
+    // }
+  }
+
+  findOrCreate(raw, connection) {
+    if (raw.account && this.findByAuth(raw.account)) {
+      return this.findByAuth(raw.account);
+    }
+
+    if (raw.host && this.findByHostInfo(raw.user, raw.host)) {
+      return this.findByHostInfo(raw.user, raw.host);
+    }
+
+    if (raw.nick && this.findByNick(raw.nick)) {
+      return this.findByNick(raw.nick);
+    }
+
+    let user = new User(raw, connection);
+    this.cacheByNick(raw.nick);
+    this.cacheByHost(user.user, user.host, user);
+    this.cacheByAuth(user.account, user);
+    return user;
+  }
+
+  cacheByNick(nick, info) {
+    if (nick && info) {
+      this.nickCache.set(nick.toLowerCase(), info);
     }
   }
 
-  get(nick) {
-    return this.cache.get(nick);
+  cacheByAuth(auth, info) {
+    if (auth && info) {
+      this.authCache.set(auth, info);
+    }
   }
 
+  cacheByHost(user, host, info) {
+    if (user && host && info) {
+      this.hostCache.set(util.format("%s@%s", user, host), info);
+    }
+  }
+
+  findByNick(nick) {
+    return this.nickCache.get(nick);
+  }
+
+  findByAuth(auth) {
+    return this.authCache.get(auth);
+  }
+
+  findByHostInfo(user, host) {
+    return this.hostCache.get(util.format("%s@%s", user, host));
+  }
+
+  /**
+   * @deprecated
+   */
+  get(nick) {
+    return this.findByNick(nick);
+  }
+
+  /**
+   * @deprecated
+   */
   set(nick, info) {
-    this.cache.set(nick, info);
+    this.nickCache.set(nick.toLowerCase(), info);
   }
 }
 
@@ -182,6 +241,7 @@ class Connection {
     this.events.on("command", proxy(this.onCommand, this));
 
     this.whoisCache = new UserCache({expire: 300});
+    this.userCache = new UserCache({expire: 300});
   }
 
   /**
@@ -343,22 +403,130 @@ class Connection {
 
       this._client.on("join", (channel, nick, raw) => {
         if (nick == this.nick) {
-          this.channels.add(channel.toLowerCase());
+          return this.channels.add(channel.toLowerCase());
         }
+        console.log("RAW", raw);
         this.events.emit("join", {
-          server: raw.server,
-          nick: nick,
+          // nick: nick,
+          user: this.userCache.findOrCreate(raw, this),
           channel: channel,
+          raw: raw,
         });
       });
 
       this._client.on("message", (nick, to, content, raw) => {
         let message = new Message(raw, this);
-        this.events.emit(message.type == Message.MESSAGE ? "message" : "command", message);
+        this.events.emit("message", message);
+
+        if (message.type == Message.COMMAND) {
+          this.events.emit("command", message);
+        }
       });
 
       this._client.on("notice", (nick, to, message, raw) => {
         this.events.emit("notice", {nick: nick, to: to, message: message});
+      });
+
+      this._client.on("kick", (channel, nick, by, reason, raw) => {
+        this.events.emit("kick", {
+          // nick: nick,
+          user: this.userCache.findOrCreate(raw, this),
+          channel: channel,
+          by: by,
+          reason: reason,
+          raw: raw
+        });
+      });
+
+      this._client.on("part", (channel, nick, reason, raw) => {
+        this.events.emit("part", {
+          // nick: nick,
+          user: this.userCache.findOrCreate(raw, this),
+          channel: channel,
+          reason: reason,
+          raw: raw,
+        });
+      });
+
+      this._client.on("quit", (nick, reason, channels, raw) => {
+        this.events.emit("kick", {
+          // nick: nick,
+          user: this.userCache.findOrCreate(raw, this),
+          reason: reason,
+          channels: channels,
+          raw: raw
+        });
+      });
+
+      this._client.on("kill", (nick, reason, channels, raw) => {
+        this.events.emit("kill", {
+          // nick: nick,
+          user: this.userCache.findOrCreate(raw, this),
+          reason: reason,
+          channels: channels,
+          raw: raw,
+        });
+      });
+
+      this._client.on("nick", (oldnick, newnick, channels, raw) => {
+        this.events.emit("nick", {
+          // nick: newnick,
+          user: this.userCache.findOrCreate(raw, this),
+          oldNick: oldnick,
+          channels: channels,
+          raw: raw,
+        });
+      });
+
+      this._client.on("action", (nick, to, text, raw) => {
+        this.events.emit("action", {
+          // nick: nick,
+          user: this.userCache.findOrCreate(raw, this),
+          to: to,
+          text: text,
+          raw: raw,
+        });
+      });
+
+      this._client.on("topic", (channel, topic, nick, raw) => {
+        /*
+         * NOTE: Cannot use 'user' here as only the nick is provided
+         */
+        this.events.emit("topic", {
+          nick: nick,
+          user: raw.host ? this.userCache.findOrCreate(raw, this) : null,
+          channel: channel,
+          topic: topic,
+          raw: raw,
+        });
+      });
+
+      this._client.on("-mode", (channel, by, mode, target, raw) => {
+        if (["v", "o"].indexOf(mode) >= 0 && target) {
+          let event_id = mode == "o" ? "unop" : "unvoice";
+          this.events.emit(event_id, {
+            // nick: target,
+            user: this.userCache.findOrCreate(raw, this),
+            channel: channel,
+            by: by,
+            mode: mode,
+            raw: raw,
+          });
+        }
+      });
+
+      this._client.on("+mode", (channel, by, mode, target, raw) => {
+        if (["v", "o"].indexOf(mode) >= 0 && target) {
+          let event_id = mode == "o" ? "op" : "voice";
+          this.events.emit(event_id, {
+            // nick: target,
+            user: this.userCache.findOrCreate(raw, this),
+            channel: channel,
+            target: target,
+            mode: mode,
+            raw: raw,
+          });
+        }
       });
     }
     return this._client;
@@ -417,12 +585,23 @@ class Message {
     return this.user.nick;
   }
 
+  get channel() {
+    return ["#", "!"].indexOf(this.meta.args[0][0]) != -1 ? this.to : null;
+  }
+
   get to() {
     return this.meta.args[0];
   }
 
-  get content() {
+  get message() {
     return this.meta.args[1];
+  }
+
+  /**
+   * @deprecated
+   */
+  get content() {
+    return this.message;
   }
 
   get pm() {
@@ -431,18 +610,18 @@ class Message {
   }
 
   get type() {
-    return (this.content.length >= 3 && this.content[0] == "!" && this.content[1] != "!") ? Message.COMMAND : Message.MESSAGE;
+    return (this.message.length >= 3 && this.message[0] == "!" && this.message[1] != "!") ? Message.COMMAND : Message.MESSAGE;
   }
 
   get command() {
     if (this.type == Message.COMMAND) {
-      return this.content.split(" ", 1)[0].substring(1);
+      return this.message.split(" ", 1)[0].substring(1);
     }
   }
 
   get params() {
     if (this.type == Message.COMMAND) {
-      return this.content.split(/\s+/).slice(1);
+      return this.message.split(/\s+/).slice(1);
     }
   }
 }
@@ -534,6 +713,9 @@ class MessageQueue {
   }
 }
 
+/**
+ * Meta class for user info.
+ */
 class User {
   constructor(meta, connection) {
     this.meta = meta;
@@ -541,7 +723,15 @@ class User {
   }
 
   whois() {
-    return this.connection.whois(this.nick);
+    if (this.account) {
+      return Promise.accept(this.meta);
+    }
+    return this.connection.whois(this.nick).then(info => {
+      if (info.account) {
+        this.meta.account = info.account;
+      }
+      return info;
+    });
   }
 
   get nick() {
@@ -555,6 +745,11 @@ class User {
   get user() {
     return this.meta.user;
   }
+
+  get account() {
+    return this.meta.account;
+  }
 }
 
 exports.Bot = Bot;
+exports.User = User;
