@@ -2,6 +2,7 @@
   "name": "juanpablo",
   "description": "IRC bot with an interest towards Formula 1",
   "version": "2.0.0",
+  "license": "MIT",
   "private": true,
   "dependencies": {
     "entities": "^1.1.1",
