@@ -242,6 +242,8 @@ class Connection {
 
     this.whoisCache = new UserCache({expire: 300});
     this.userCache = new UserCache({expire: 300});
+
+    this.events.on("error", error => console.error("connection.error:", error));
   }
 
   /**
@@ -398,6 +400,7 @@ class Connection {
       // });
 
       this._client.on("error", raw => {
+        console.error("client error:", raw);
         this.events.emit("error", raw);
       });
 
