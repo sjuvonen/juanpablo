@@ -199,11 +199,11 @@ exports.configure = function(connection) {
     return new Promise((resolve, reject) => {
       let reply = [];
       drivers.reload().then(d_pts => {
-        let row = d_pts.slice(0, 3).map(formatItem);
+        let row = d_pts.slice(0, 10).map(formatItem);
         reply.push("Drivers: " + row.join("; "));
 
         teams.reload().then(t_pts => {
-          let row = t_pts.slice(0, 3).map(formatItem);
+          let row = t_pts.slice().map(formatItem);
           reply.push("Teams: " + row.join("; "));
           resolve(reply);
         }, reject);
