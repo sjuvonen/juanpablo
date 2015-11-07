@@ -45,6 +45,114 @@ class Bot {
   }
 }
 
+class UserCache {
+  constructor(config) {
+    this.cache = new Map;
+    this.config = config || {};
+    this.timers = {};
+
+    if (this.config.expire > 0) {
+      this.timers.expire = setInterval(() => {
+
+      }, this.config.expire);
+    }
+  }
+
+  get(nick) {
+    return this.cache.get(nick);
+  }
+
+  set(nick, info) {
+    this.cache.set(nick, info);
+  }
+}
+
+class RawCommandWrapper {
+  static create(client, config) {
+    return (new RawCommandWrapper(client, config)).run();
+  }
+
+  constructor(client, config) {
+    this.client = client;
+    this.config = config;
+
+    Object.defineProperty(this, "meta", {
+      enumerable: false,
+      value: {}
+    });
+
+    this.meta.result = [];
+    this.meta.events = new EventEmitter;
+  }
+
+  get events() {
+    return this.meta.events;
+  }
+
+  get result() {
+    return this.meta.result;
+  }
+
+  run() {
+    return new Promise((resolve, reject) => {
+      this.init();
+
+      this.events.once("finish", result => {
+        this.client.removeListener("finish", this.proxy());
+        this.client.removeListener("error", this.proxy());
+        resolve(result);
+      });
+      this.events.once("error", error => {
+        this.client.removeListener("finish", this.proxy());
+        this.client.removeListener("error", this.proxy());
+        reject(error);
+      });
+    });
+  }
+
+  onMessage(raw) {
+    let value = this.filter(raw);
+    if (value) {
+      this.result.push(value);
+    }
+
+    if (this.finish(raw)) {
+      this.events.emit("finish", this.meta.result);
+      return;
+    }
+  }
+
+  init() {
+    if (this.handler("init")) {
+      this.handler("init")();
+    }
+    this.client.on("raw", this.proxy());
+  }
+
+  handler(id) {
+    return this.config[id];
+  }
+
+  finish(raw) {
+    return this.handler("finish") != null && this.handler("finish")(raw);
+  }
+
+  filter(raw) {
+    if (this.handler("filter")) {
+      return this.handler("filter")(raw);
+    } else {
+      return raw;
+    }
+  }
+
+  proxy() {
+    if (!("_proxy" in this)) {
+      this._proxy = proxy(this.onMessage, this);
+    }
+    return this._proxy;
+  }
+}
+
 /**
  * Connection to a server.
  *
@@ -53,6 +161,7 @@ class Bot {
 class Connection {
   constructor(config) {
     config.autoConnect = false;
+    // config.debug = true;
 
     this.config = config;
     this.events = new EventEmitter;
@@ -66,6 +175,8 @@ class Connection {
 
     this.commands = new CommandManager;
     this.events.on("command", proxy(this.onCommand, this));
+
+    this.whoisCache = new UserCache({expire: 300});
   }
 
   /**
@@ -78,6 +189,57 @@ class Connection {
         let data = {server: raw.server, nick: raw[0]};
         this.events.emit("connect", data);
         resolve(data);
+      });
+    });
+  }
+
+  /**
+   * Query info about users on a channel.
+   *
+   * NOTE: Unlike the IRC protocol, this command only allows who'ing a channel.
+   */
+  who(channel) {
+    if (["#", "!"].indexOf(channel[0]) == -1) {
+      return Promise.reject("Invalid channel");
+    }
+    return RawCommandWrapper.create(this.client, {
+      init: () => {
+        this.client.send("WHO", channel);
+      },
+      finish: raw => {
+        return raw.command == "rpl_endofwho";
+      },
+      filter: raw => {
+        if (raw.command == "rpl_whoreply") {
+          console.log
+          return {
+            // self: raw.args[0],
+            // server: raw.args[4],
+
+            channel: raw.args[1],
+            user: raw.args[2],
+            host: raw.args[3],
+            nick: raw.args[5],
+
+            // H := here; G := gone
+            status: raw.args[6][0],
+
+            // @ := op; + := voice, null := none
+            mode: raw.args[6][1] || null,
+          };
+        }
+      }
+    });
+  }
+
+  whois(nick) {
+    if (this.whoisCache.get(nick)) {
+      return Promise.resolve(this.whoisCache.get(nick));
+    }
+    return new Promise((resolve, reject) => {
+      this.client.whois(nick, info => {
+        this.whoisCache.set(nick, info);
+        resolve(info);
       });
     });
   }
@@ -151,16 +313,23 @@ class Connection {
           message.reply(error.toString());
         });
       }, error => {
-        console.error("onCommand:", error.stack);
+        message.reply(error.toString());
       });
     } catch (error) {
       message.reply(error.toString());
+      console.error("connection.onCommand:", error.stack);
     }
   }
 
   get client() {
     if (!("_client" in this)) {
       this._client = new irc.Client(this.host, this.nick, this.config);
+
+      // this._client.on("raw", raw => {
+      //   if (raw.command != "PING") {
+      //     console.log("RAW", raw);
+      //   }
+      // });
 
       this._client.on("error", raw => {
         this.events.emit("error", raw);
@@ -210,23 +379,10 @@ class Connection {
  * Message received from the server.
  */
 class Message {
-  /**
-   * Type code for regular messages
-   */
-  static get MESSAGE() {
-    return 1;
-  };
-
-  /**
-   * Type code for bot commands
-   */
-  static get COMMAND() {
-    return 2;
-  };
-
   constructor(meta, connection) {
     this.meta = meta;
     this.connection = connection;
+    this.user = new User(meta, connection);
   }
 
   /**
@@ -252,15 +408,11 @@ class Message {
   }
 
   get nick() {
-    return this.meta.nick;
+    return this.user.nick;
   }
 
   get to() {
     return this.meta.args[0];
-  }
-
-  get host() {
-    return this.meta.host;
   }
 
   get content() {
@@ -288,6 +440,9 @@ class Message {
     }
   }
 }
+
+Message.MESSAGE = 1;
+Message.COMMAND = 2;
 
 class Reply {
   constructor(content, type) {
@@ -370,6 +525,29 @@ class MessageQueue {
 
   get length() {
     return this.messages.length;
+  }
+}
+
+class User {
+  constructor(meta, connection) {
+    this.meta = meta;
+    this.connection = connection;
+  }
+
+  whois() {
+    return this.connection.whois(this.nick);
+  }
+
+  get nick() {
+    return this.meta.nick;
+  }
+
+  get host() {
+    return this.meta.host;
+  }
+
+  get user() {
+    return this.meta.user;
   }
 }
 
