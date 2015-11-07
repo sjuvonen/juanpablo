@@ -53,7 +53,12 @@ class UserCache {
 
     if (this.config.expire > 0) {
       this.timers.expire = setInterval(() => {
-
+        let now = new Date;
+        this.cache.forEach((info, nick) => {
+          if (now - info.timestamp > (this.config.expire * 1000)) {
+            this.cache.delete(nick);
+          }
+        })
       }, this.config.expire);
     }
   }
@@ -238,6 +243,7 @@ class Connection {
     }
     return new Promise((resolve, reject) => {
       this.client.whois(nick, info => {
+        info.timestamp = new Date;
         this.whoisCache.set(nick, info);
         resolve(info);
       });
