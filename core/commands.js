@@ -42,22 +42,23 @@ class Command {
     this.callback = arguments.length > 2 ? arguments[2] : arguments[1];
   }
 
-  access() {
-    let command = this;
+  access(user) {
     return new Promise((resolve, reject) => {
-      switch(command.permissions) {
+      switch(this.permissions) {
         case Command.ALLOW_ALL:
           return resolve();
 
         case Command.ALLOW_AUTHED:
-          // user.auth()...
-          return resolve();
+          user.whois().then(info => {
+            info.account ? resolve() : reject(new Error("You need to auth to use this command"));
+          });
+          break;
 
         case Command.ALLOW_ADMIN:
-          return resolve();
+          return reject(new Error("AdminAuth mechanism not supported."));
 
         case Command.ALLOW_USERS:
-          return resolve();
+          return reject(new Error("WhitelistAuth mechanism not supported."));
       }
     });
   }
