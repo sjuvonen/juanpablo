@@ -405,7 +405,6 @@ class Connection {
         if (nick == this.nick) {
           return this.channels.add(channel.toLowerCase());
         }
-        console.log("RAW", raw);
         this.events.emit("join", {
           // nick: nick,
           user: this.userCache.findOrCreate(raw, this),
