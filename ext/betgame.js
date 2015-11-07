@@ -320,14 +320,18 @@ class Bets {
 
       let season = (new Date).getUTCFullYear();
       let sql = "INSERT INTO betgame_points(season, round, user, nick, points) VALUES (?, ?, ?, ?, ?)";
-      let smt = this.db.prepare(sql);
+      let smt = this.db.prepare(sql, error => {
+        if (error) {
+          return reject(error);
+        }
+        
+        scores.forEach(row => {
+          smt.run(season, round, row.user, row.nick, row.points);
+        });
 
-      scores.forEach(row => {
-        smt.run(season, round, row.user, row.nick, row.points);
+        smt.finalize();
+        resolve();
       });
-
-      smt.finalize();
-      resolve();
     });
   }
 }
