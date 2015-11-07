@@ -531,7 +531,7 @@ exports.configure = function(connection, modules) {
     });
   });
 
-  connection.addCommand("top", perms, (user, params) => {
+  connection.addCommand("top", (user, params) => {
     return new Promise((resolve, reject) => {
       if (params.length) {
         if (params[0] == "last") {
