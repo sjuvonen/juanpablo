@@ -7,6 +7,7 @@
 let EventEmitter = require("events");
 let FeedParser = require("feedparser");
 let request = require("request");
+let urllib = require("url");
 let util = require("util");
 let proxy = require("../core/proxy");
 
@@ -77,11 +78,23 @@ class FeedManager {
     }
   }
 
+  trimQueryVariables(url) {
+    let data = urllib.parse(url, true);
+    delete data.search;
+    Object.keys(data.query).forEach(key => {
+      if (!Number.isInteger(data.query[key])) {
+        delete data.query[key];
+      }
+    });
+    return urllib.format(url);
+  }
+
   formatArticle(article) {
+    let link = this.trimQueryVariables(article.link);
     return util.format("[%s] %s - %s",
       article.source.toUpperCase().replace(/\W/, ""),
       article.title,
-      article.link);
+      link);
   }
 
   get isWatching() {
