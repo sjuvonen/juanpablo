@@ -82,7 +82,7 @@ class FeedManager {
     let data = urllib.parse(url, true);
     delete data.search;
     Object.keys(data.query).forEach(key => {
-      if (Number.isNaN(data.query[key])) {
+      if (isNaN(data.query[key])) {
         delete data.query[key];
       }
     });
