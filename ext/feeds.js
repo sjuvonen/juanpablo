@@ -78,19 +78,19 @@ class FeedManager {
     }
   }
 
-  trimQueryVariables(url) {
+  stripQueryVariables(url) {
     let data = urllib.parse(url, true);
     delete data.search;
     Object.keys(data.query).forEach(key => {
-      if (!Number.isInteger(data.query[key])) {
+      if (Number.isNaN(data.query[key])) {
         delete data.query[key];
       }
     });
-    return urllib.format(url);
+    return urllib.format(data);
   }
 
   formatArticle(article) {
-    let link = this.trimQueryVariables(article.link);
+    let link = this.stripQueryVariables(article.link);
     return util.format("[%s] %s - %s",
       article.source.toUpperCase().replace(/\W/, ""),
       article.title,
