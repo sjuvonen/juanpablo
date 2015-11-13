@@ -102,6 +102,14 @@ class EventCalendar {
     return this.findNext(EventInfo.RACE);
   }
 
+  get lastRace() {
+    if (this.nextRace) {
+      return this.race(this.nextRace.round - 1);
+    } else {
+      return this.race(this.calendar[this.calendar.length - 1].round - 1);
+    }
+  }
+
   get nextQualifying() {
     return this.findNext(EventInfo.QUALIFYING);
   }

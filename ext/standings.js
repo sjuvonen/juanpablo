@@ -81,95 +81,93 @@ class F1comParser {
     let mode = this.mode;
 
     return new Promise((resolve, reject) => {
-      process.nextTick(() => {
-        let standings = [];
-        let state = State.WAIT;
-        let item;
+      let standings = [];
+      let state = State.WAIT;
+      let item;
 
-        let parser = new htmlparser.Parser({
-          onopentag: (tag, attrs) => {
-            switch (state) {
-              case State.WAIT:
-                if (tag == "div" && attrs.class == "standings") {
-                  state = State.WAIT_TABLE;
+      let parser = new htmlparser.Parser({
+        onopentag: (tag, attrs) => {
+          switch (state) {
+            case State.WAIT:
+              if (tag == "div" && attrs.class == "standings") {
+                state = State.WAIT_TABLE;
+              }
+              break;
+
+            case State.WAIT_TABLE:
+              if (tag == "tbody") {
+                state = State.WAIT_NAME;
+              }
+              break;
+
+            case State.WAIT_NAME:
+              if (tag == "tr") {
+                item = {
+                  name: "",
+                  points: null,
+                };
+
+                standings.push(item);
+              }
+              if (mode == F1comParser.READ_TEAMS) {
+                if (tag == "td" && attrs.class == "name") {
+                  state = State.READ_NAME;
                 }
-                break;
-
-              case State.WAIT_TABLE:
-                if (tag == "tbody") {
-                  state = State.WAIT_NAME;
+              } else {
+                if (tag == "span" && ["first-name", "last-name"].indexOf(attrs.class) >= 0) {
+                  state = State.READ_NAME;
                 }
-                break;
+              }
+              break;
 
-              case State.WAIT_NAME:
-                if (tag == "tr") {
-                  item = {
-                    name: "",
-                    points: null,
-                  };
+            case State.READ_NAME:
+              if (tag == "span" && attrs.class == "tla") {
+                state = State.WAIT_POINTS;
+              }
+              break;
 
-                  standings.push(item);
-                }
-                if (mode == F1comParser.READ_TEAMS) {
-                  if (tag == "td" && attrs.class == "name") {
-                    state = State.READ_NAME;
-                  }
-                } else {
-                  if (tag == "span" && ["first-name", "last-name"].indexOf(attrs.class) >= 0) {
-                    state = State.READ_NAME;
-                  }
-                }
-                break;
+            case State.WAIT_POINTS:
+              if (tag == "td" && attrs.class == "points") {
+                state = State.READ_POINTS;
+              }
+              break;
+          }
+        },
+        ontext: text => {
+          switch (state) {
+            case State.READ_NAME:
+              item.name = (item.name + " " + text.trim()).trim();
+              break;
 
-              case State.READ_NAME:
-                if (tag == "span" && attrs.class == "tla") {
-                  state = State.WAIT_POINTS;
-                }
-                break;
-
-              case State.WAIT_POINTS:
-                if (tag == "td" && attrs.class == "points") {
-                  state = State.READ_POINTS;
-                }
-                break;
-            }
-          },
-          ontext: text => {
-            switch (state) {
-              case State.READ_NAME:
-                item.name = (item.name + " " + text.trim()).trim();
-                break;
-
-              case State.READ_POINTS:
-                item.points = text;
-                break;
-            }
-          },
-          onclosetag: tag => {
-            switch (state) {
-              case State.READ_NAME:
-                if (mode == F1comParser.READ_TEAMS && tag == "td") {
-                  state = State.WAIT_POINTS;
-                }
-                break;
-              case State.READ_POINTS:
-                if (tag == "td") {
-                  state = State.WAIT_NAME;
-                }
-                break;
-            }
-          },
-        });
-
-        parser.write(html);
-        parser.end();
-
-        standings.forEach(item => {
-          item.name = entities.decodeHTML(item.name);
-        });
-
-        resolve(standings);
+            case State.READ_POINTS:
+              item.points = text;
+              break;
+          }
+        },
+        onclosetag: tag => {
+          switch (state) {
+            case State.READ_NAME:
+              if (mode == F1comParser.READ_TEAMS && tag == "td") {
+                state = State.WAIT_POINTS;
+              }
+              break;
+            case State.READ_POINTS:
+              if (tag == "td") {
+                state = State.WAIT_NAME;
+              }
+              break;
+          }
+        },
       });
+
+      parser.write(html);
+      parser.end();
+
+      standings.forEach(item => {
+        item.name = entities.decodeHTML(item.name);
+      });
+
+      resolve(standings);
     });
   }
 }

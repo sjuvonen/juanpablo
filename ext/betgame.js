@@ -33,21 +33,20 @@ class RaceResults {
         return resolve(this.results[i]);
       }
       this.fetchRace(i).then(result => {
+        this.results[i] = result;
         resolve(result);
       });
     });
   }
 
   fetchRace(i) {
-    let cache = this;
     return new Promise((resolve, reject) => {
       net.download(this.url).then(response => {
         (new WikipediaParser({round: i})).parse(response.data.toString()).then(result => {
           if (result.length) {
-            this.results[i] = result;
             resolve(result);
           } else {
-            return reject(-1);
+            return reject();
           }
         }, error => {
           console.error("raceresults.fetchrace:", error);
@@ -200,6 +199,7 @@ class PointsCalculator {
       } else if (this.driverOnPodium(name)) {
         return value + scoring[3];
       }
+      return value;
     }, 0);
 
     let max = scoring.slice(0, 3).reduce((sum, x) => sum + x, 0);
@@ -209,6 +209,10 @@ class PointsCalculator {
     }
 
     return points;
+  }
+
+  driverOnPodium(name) {
+    return this.results.slice(0, 3).indexOf(name) != -1;
   }
 }
 
@@ -270,7 +274,13 @@ class Bets {
       }
 
       this.db.all(sql, params, (error, points) => {
-        error ? reject(error) : resolve(points);
+        if (error) {
+          return reject(error);
+        }
+        // else if (!points.length) {
+        //   return reject(new Error("No points data"));
+        // }
+        resolve(points);
       });
     });
   }
@@ -324,13 +334,8 @@ class Bets {
         if (error) {
           return reject(error);
         }
-        
-        scores.forEach(row => {
-          smt.run(season, round, row.user, row.nick, row.points);
-        });
-
-        smt.finalize();
-        resolve();
+        scores.forEach(row => smt.run(season, round, row.user, row.nick, row.points));
+        smt.finalize(resolve);
       });
     });
   }
@@ -372,7 +377,14 @@ class BetGame {
   }
 
   scores(round) {
-    return this.bets.scores.apply(this.bets, arguments);
+    return this.bets.scores(round).then(scores => {
+      if (!scores.length && !this.updateScoresTimeout) {
+        console.log("retry update");
+        return this.updateScores().then(results => this.bets.scores(round));
+      } else {
+        return scores;
+      }
+    });
   }
 
   topScores() {
@@ -385,37 +397,38 @@ class BetGame {
         });
 
         resolve(scores);
+      }, error => {
+        console.log("betgame.topscores", error.stack);
       });
     });
   }
 
   updateScores(auto_retry) {
+    if (this.updateScoresTimeout) {
+      return Promise.reject(new Error("Game already updating results"));
+    }
+
     if (!arguments.length) {
       auto_retry = true;
     }
 
-    return new Promise((resolve, reject) => {
-      let round = this.races.nextRace.round - 1;
-      this.results.fetchRace(round).then(result => {
-        this.bets.round(round).then(bets => {
-          (new PointsCalculator(result)).process(bets).then(scores => {
-            this.bets.saveScores(round, scores).then(resolve, error => {
-              console.error("betgame.updatescores:", error.stack);
-              reject(error);
-            });
-          });
-        });
-      }, error => {
+    let round = this.races.lastRace.round;
+    return Promise.all([this.results.fetchRace(round), this.bets.round(round)])
+      .then(data => (new PointsCalculator(data[0]).process(data[1])))
+      .then(scores => this.bets.saveScores(round, scores))
+      .catch(error => {
         if (error) {
-          return reject(error);
+          console.error("betgame.updatescores:", error);
+          return Promise.reject(error);
         } else if (auto_retry) {
-          console.log("No score data, retry");
-          setTimeout(() => {
-            this.updateScores();
-          }, 60 * 1000 * 10);
+            console.log("No score data, retry");
+            this.updateScoresTimeout = setTimeout(() => {
+              this.updateScores().then(() => {
+                this.updateScoresTimeout = null;
+              });
+            }, 60 * 1000 * 10);
         }
       });
-    });
   }
 
   parseDrivers(d1, d2, d3) {
