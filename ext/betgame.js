@@ -448,17 +448,17 @@ class BetGame {
         }
 
         if (!names[i]) {
-          return reject(new Error(util.format("Could not find driver for '%s'", d)));
+          throw new Error(util.format("Could not find driver for '%s'", d));
         }
       }
 
       let unique = names.filter((name, i) => names.indexOf(name) == i);
 
       if (unique.length < 3) {
-        reject(new Error("Must have three unique names"));
+        throw new Error("Must have three unique names");
       }
 
-      resolve(names);
+      return names;
     });
   }
 
