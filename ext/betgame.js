@@ -355,11 +355,10 @@ class BetGame {
   bet(user, d1, d2, d3) {
     let round = this.races.nextQualifying.round;
     return this.parseDrivers(d1, d2, d3)
-      .then(names => this.bets.save(round, user, names))
-      .then(() => {
+      .then(names => this.bets.save(round, user, names).then(() => {
         let joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
-        resolve(util.format("%s: %s [OK]", user.nick, joined));
-      })
+        return util.format("%s: %s [OK]", user.nick, joined);
+      }))
       .catch(error => {
         console.error("betgame.bet:", error.stack);
         return error;
