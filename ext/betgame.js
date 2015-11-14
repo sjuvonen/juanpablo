@@ -634,9 +634,6 @@ exports.configure = function(connection, modules) {
     });
   });
 
-  setTimeout(() => {
-    game.updateScores();
-  }, 5000);
-
+  setTimeout(() => game.updateScores(), 5000);
   return game;
 };

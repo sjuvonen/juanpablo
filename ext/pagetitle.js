@@ -26,7 +26,6 @@ class PageTitle {
   }
 
   fetchTitle(url) {
-    let pagetitle = this;
     return new Promise((resolve, reject) => {
       let download = net.request(url);
       download.on("response", response => {
@@ -40,8 +39,8 @@ class PageTitle {
 
             download.abort();
 
-            if (headers["content-type"].match("image|audio  ")) {
-              pagetitle.parseTypeInfo(response).then(resolve, reject);
+            if (headers["content-type"].match(/image|audio/)) {
+              this.parseTypeInfo(response).then(resolve, reject);
             }
           }
         } catch (error) {
@@ -49,14 +48,14 @@ class PageTitle {
         }
       });
 
-      download.start().then(response => {
-        this.decodeResponse(response).then(content => {
+      download.start()
+        .then(response => this.decodeResponse(response))
+        .then(content => {
           let title = this.parseTitle(content);
           if (title) {
             resolve(title);
           }
         });
-      });
     });
   }
 

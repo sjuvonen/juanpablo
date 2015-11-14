@@ -131,6 +131,9 @@ class UserCache {
   }
 }
 
+/**
+ * Execute an IRC command and handle its multi-line response.
+ */
 class RawCommandWrapper {
   static create(client, config) {
     return (new RawCommandWrapper(client, config)).run();
@@ -160,7 +163,6 @@ class RawCommandWrapper {
   run() {
     return new Promise((resolve, reject) => {
       this.init();
-
       this.events.once("finish", result => {
         this.client.removeListener("finish", this.proxy());
         this.client.removeListener("error", this.proxy());
@@ -379,15 +381,10 @@ class Connection {
   onCommand(message) {
     try {
       let command = this.commands.get(message.command);
-      command.access(message.user).then(() => {
-        command.execute(message.user, message.params).then(result => {
-          message.reply(result);
-        }, error => {
-          message.reply(error.toString());
-        });
-      }, error => {
-        message.reply(error.toString());
-      });
+      command.access(message.user)
+        .then(() => command.execute(message.user, message.params))
+        .then(result => message.reply(result))
+        .catch(error => message.reply(error.toString()));
     } catch (error) {
       message.reply(error.toString());
       console.error("connection.onCommand:", error.stack);
