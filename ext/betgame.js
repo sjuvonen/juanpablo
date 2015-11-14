@@ -244,13 +244,9 @@ class Bets {
   }
 
   user(user, round) {
-    return new Promise((resolve, reject) => {
-      user.whois().then(info => {
-        this.round(round, info).then(data => {
-          resolve(data[0]);
-        }, reject);
-      });
-    });
+    return user.whois()
+      .then(info => this.round(round, info))
+      .then(data => resolve(data[0]));
   }
 
   scores(round) {
@@ -357,18 +353,17 @@ class BetGame {
   }
 
   bet(user, d1, d2, d3) {
-    return new Promise((resolve, reject) => {
-      let round = this.races.nextQualifying.round;
-      this.parseDrivers(d1, d2, d3).then(names => {
-        this.bets.save(round, user, names).then(() => {
-          let joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
-          resolve(util.format("%s: %s [OK]", user.nick, joined));
-        }, error => {
-          console.error("betgame.bet:", error.stack);
-          return error;
-        });
-      }).catch(reject);
-    });
+    let round = this.races.nextQualifying.round;
+    return this.parseDrivers(d1, d2, d3)
+      .then(names => this.bets.save(round, user, names))
+      .then(() => {
+        let joined = names.map((n, i) => (i+1) + ". " + n).join("; ");
+        resolve(util.format("%s: %s [OK]", user.nick, joined));
+      })
+      .catch(error => {
+        console.error("betgame.bet:", error.stack);
+        return error;
+      });
   }
 
   userBets(user) {
@@ -433,33 +428,37 @@ class BetGame {
 
   parseDrivers(d1, d2, d3) {
     let keys = Array.prototype.slice.apply(arguments).map(name => name.toLowerCase());
+    return this.drivers.reload(true).then(data => {
+      let names = [null, null, null];
 
-    return new Promise((resolve, reject) => {
-      this.drivers.reload(true).then(data => {
-        let names = [null, null, null];
+      for (let i = 0; i < keys.length; i++) {
+        let d = keys[i];
 
-        for (let i = 0; i < keys.length; i++) {
-          let d = keys[i];
+        for (let j = 0; j < data.length; j++) {
+          let row = data[j];
+          let surname = row.name.split(" ", 2)[1]
+            .toLowerCase()
+            .replace("ä", "a")
+            .replace("ö", "o");
 
-          for (let j = 0; j < data.length; j++) {
-            let row = data[j];
-            let surname = row.name.split(" ", 2)[1]
-              .toLowerCase()
-              .replace("ä", "a")
-              .replace("ö", "o");
-
-            if (surname.substring(0, d.length) == d) {
-              names[i] = row.name;
-              break;
-            }
-          }
-
-          if (!names[i]) {
-            return reject(util.format("Could not find driver for '%s'", d));
+          if (surname.substring(0, d.length) == d) {
+            names[i] = row.name;
+            break;
           }
         }
-        resolve(names);
-      });
+
+        if (!names[i]) {
+          return reject(new Error(util.format("Could not find driver for '%s'", d)));
+        }
+      }
+
+      let unique = names.filter((name, i) => names.indexOf(name) == i);
+
+      if (unique.length < 3) {
+        reject(new Error("Must have three unique names"));
+      }
+
+      resolve(names);
     });
   }
 
@@ -543,7 +542,7 @@ exports.configure = function(connection, modules) {
           }
         });
 
-        game.bet.apply(game, [user].concat(params)).then(resolve, reject);
+        game.bet(...([user].concat(params))).then(resolve, reject);
       }
     });
   });
