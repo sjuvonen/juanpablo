@@ -733,8 +733,10 @@ class User {
     return this.connection.whois(this.nick).then(info => {
       if (info.account) {
         this.meta.account = info.account;
+        return info;
+      } else {
+        return Promise.reject(new Error("Whois failed for " + this.nick));
       }
-      return info;
     });
   }
 
