@@ -741,7 +741,7 @@ class User {
   }
 
   get nick() {
-    return this.meta.nick;
+    return this.meta.nick || "";
   }
 
   get host() {
