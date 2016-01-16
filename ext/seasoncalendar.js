@@ -237,19 +237,33 @@ exports.configure = function(connection) {
       if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
         display.push(" (in");
 
-        if (diff.weeks() > 0) {
-          display.push(util.format(" %d weeks", diff.weeks()));
+        if (diff.months() == 1) {
+          display.push(" 1 month");
+        } else if (diff.months() > 1) {
+          display.push(util.format(" %d months", diff.months()));
         }
 
-        if (diff.days() > 0) {
+        if (diff.weeks() == 1) {
+          display.push(" 1 week");
+        } else if (diff.months() > 1) {
+          display.push(util.format(" %d weeks", diff.months()));
+        }
+
+        if (diff.days() == 1) {
+          display.push(" 1 day");
+        } else if (diff.days() > 1) {
           display.push(util.format(" %d days", diff.days() % 7));
         }
 
-        if (diff.hours()) {
+        if (diff.hours() == 1) {
+          display.push(" 1 hour");
+        } else if (diff.hours() > 1) {
           display.push(util.format(" %d hours", diff.hours()));
         }
 
-        if (diff.minutes()) {
+        if (diff.minutes() == 1) {
+          display.push(" 1 minute");
+        } else if (diff.minutes() > 1) {
           display.push(util.format(" %d minutes", diff.minutes()));
         }
 
