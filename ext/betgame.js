@@ -406,6 +406,10 @@ class BetGame {
       auto_retry = true;
     }
 
+    if (!this.races.lastRace) {
+      return Promise.reject("No last race");
+    }
+
     let round = this.races.lastRace.round;
     return Promise.all([this.results.fetchRace(round), this.bets.round(round)])
       .then(data => (new PointsCalculator(data[0]).process(data[1])))
