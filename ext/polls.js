@@ -45,7 +45,7 @@ class Polls {
           return reject(error);
         }
         self.activePoll.id = this.lastID;
-        self.watchActivePoll();
+        self.wait();
         return resolve();
       });
     });
