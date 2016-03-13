@@ -72,6 +72,7 @@ class Polls {
           return reject(new Error("You have already voted in this poll"));
         }
         this.activePoll.votes.push(vote);
+        resolve();
       });
     });
   }
@@ -156,7 +157,7 @@ class Stats {
       votes.set(key, votes.get(key) + 1);
     });
 
-    let output = [...votes.items()]
+    let output = [...votes.entries()]
       .sort((a, b) => a[1] - b[1])
       .map(item => item.join(": "))
       .join(", ");
