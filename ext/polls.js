@@ -183,11 +183,13 @@ exports.configure = (connection, modules) => {
     let timeout = options.pop();
     let expires = null;
 
-    if (timeout[0] == "+") {
-      expires = moment().add(timeout, "seconds");
-    } else {
-      options.push(timeout);
+    if (!timeout || timeout[0] != "+") {
+      if (typeof timeout != "undefined") {
+        options.push(timeout);
+      }
       expires = moment().add(config.expires, "seconds");
+    } else {
+      expires = moment().add(timeout, "seconds");
     }
 
     if (!question) {
