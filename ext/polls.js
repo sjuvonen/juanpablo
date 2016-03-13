@@ -186,7 +186,7 @@ exports.configure = (connection, modules) => {
     }
 
     if (!options.length) {
-      options = polls.options.slice();
+      options = config.options.slice();
     }
 
     return user.whois()
