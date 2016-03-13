@@ -7,7 +7,6 @@
 let EventEmitter = require("events");
 let htmlparser = require("htmlparser2");
 let moment = require("moment");
-let sqlite = require("sqlite3");
 let util = require("util");
 
 let commands = require("../core/commands");
