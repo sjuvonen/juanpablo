@@ -67,8 +67,8 @@ class Command {
     });
   }
 
-  execute(user, params) {
-    return this.callback(user, params);
+  execute(user, params, message) {
+    return this.callback(user, params, message);
   }
 }
 
