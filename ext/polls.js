@@ -107,7 +107,7 @@ class Polls {
         user TEXT NOT NULL, \
         nick TEXT NOT NULL, \
         created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
-        UNIQUE KEY (question_id, user) \
+        UNIQUE(question_id, user) \
       )");
     });
   }
