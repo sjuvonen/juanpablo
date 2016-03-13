@@ -195,7 +195,7 @@ exports.configure = (connection, modules) => {
         poll.options.forEach(option => {
           commands.add(option.toLowerCase(), (user, params) => {
             return user.whois()
-              .then(info => polls.vote(params.shift(), info))
+              .then(info => polls.vote(option, info))
               .catch(error => {
                 console.error("Failed to process answer", error.stack);
               });
