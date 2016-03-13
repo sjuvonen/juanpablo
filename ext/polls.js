@@ -71,7 +71,7 @@ class Polls {
         if (error) {
           return reject(new Error("You have already voted in this poll"));
         }
-        poll.votes.push(vote);
+        this.activePoll.votes.push(vote);
       });
     });
   }
