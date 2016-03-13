@@ -173,7 +173,8 @@ exports.configure = (connection, modules) => {
   polls._initDatabase();
 
   connection.addCommand("poll", Command.ALLOW_AUTHED, (user, params, message) => {
-    let options = params.slice();
+    // By default params are split from message using white-space, so we join it and split by semicolon.
+    let options = params.join(" ").split(";");
     let question = options.shift();
     let expires = moment().add(options.pop(), "seconds");
 
