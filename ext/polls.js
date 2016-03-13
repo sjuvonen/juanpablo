@@ -178,9 +178,17 @@ exports.configure = (connection, modules) => {
 
   connection.addCommand("poll", Command.ALLOW_AUTHED, (user, params, message) => {
     // By default params are split from message using white-space, so we join it and split by semicolon.
-    let options = params.join(" ").split(";");
+    let options = params.join(" ").split(";").map(raw => raw.trim());
     let question = options.shift();
-    let expires = moment().add(options.pop(), "seconds");
+    let timeout = options.pop();
+    let expires = null;
+
+    if (timeout[0] == "+") {
+      expires = moment().add(timeout, "seconds");
+    } else {
+      options.push(timeout);
+      expires = moment().add(config.expires, "seconds");
+    }
 
     if (!question) {
       return Promise.reject(new Error("Usage: !poll question [options...] [expires]"));
