@@ -14,6 +14,10 @@ class CommandManager {
     });
   }
 
+  delete(name) {
+    this.commands.delete(name);
+  }
+
   add(name, permissions, callback) {
     if (this.commands.has(name)) {
       throw new Error(util.format("Command %s is already registered", name));

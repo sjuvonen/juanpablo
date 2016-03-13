@@ -22,7 +22,8 @@
       "./ext/seasoncalendar",
       "./ext/standings",
       "./ext/betgame",
-      "./ext/chanlog"
+      "./ext/chanlog",
+      "./ext/polls"
     ],
     "files": {
       "storage": "./data"
@@ -71,6 +72,10 @@
           "url": "http://www.grandprix247.com/feed/"
         }
       ]
+    },
+    "polls": {
+      "expires": 300,
+      "options": ["yes", "no"]
     },
     "betgame": {
       "results": "https://en.wikipedia.org/wiki/2015_Formula_One_season",

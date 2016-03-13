@@ -382,7 +382,7 @@ class Connection {
     try {
       let command = this.commands.get(message.command);
       command.access(message.user)
-        .then(() => command.execute(message.user, message.params))
+        .then(() => command.execute(message.user, message.params, message))
         .then(result => message.reply(result))
         .catch(error => message.reply(error.toString()));
     } catch (error) {
