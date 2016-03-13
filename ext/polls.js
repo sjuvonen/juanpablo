@@ -30,7 +30,7 @@ class Polls {
         $user: user.user,
         $nick: user.nick,
         // $created: this.activePoll.created,
-        $expires: this.activePoll.expires,
+        $expires: moment(this.activePoll.expires).format("YYYY-MM-DD HH:mm:ss"),
       };
 
       options.forEach((option, i) => {
