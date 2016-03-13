@@ -16,6 +16,7 @@
   },
   "modules": {
     "enabled": [
+      "./ext/database",
       "./ext/pagetitle",
       "./ext/feeds",
       "./ext/seasoncalendar",

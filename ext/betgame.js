@@ -285,7 +285,7 @@ class Bets {
     return new Promise((resolve, reject) => {
       user.whois().then(info => {
         let sql = "INSERT INTO betgame_bets (season, round, user, nick, d1, d2, d3) \
-            VALUES ($season, $round, $user, $nick, $d1, $d2, $d3)";
+          VALUES ($season, $round, $user, $nick, $d1, $d2, $d3)";
 
         let params = {
           $season: (new Date).getUTCFullYear(),
@@ -507,7 +507,7 @@ exports.configure = function(connection, modules) {
   let drivers = modules.get("standings").drivers;
   let seasoncalendar = modules.get("seasoncalendar");
   let races = seasoncalendar.calendar;
-  let database = new sqlite.Database(connection.config.database.sqlite.file);
+  let database = modules.get("database");
 
   let game = new BetGame(database, drivers, seasoncalendar, new RaceResults(connection.config.modules.betgame));
   game._initDatabase();
