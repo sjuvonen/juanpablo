@@ -63,7 +63,7 @@ class Polls {
       let sql = "INSERT INTO polls_votes (question_id, vote, user, nick) VALUES ($question, $vote, $user, $nick)";
       let params = {
         $question: this.activePoll.id,
-        $vote: $vote,
+        $vote: vote,
         $user: user.user,
         $nick: user.nick,
       };
