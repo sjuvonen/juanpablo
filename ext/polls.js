@@ -67,6 +67,7 @@ class Polls {
         $user: user.user,
         $nick: user.nick,
       };
+      console.log("p", )
       this.db.run(sql, params, error => {
         error ? reject(new Error("You have already voted in this poll")) : resolve();
       });
@@ -194,8 +195,11 @@ exports.configure = (connection, modules) => {
       .then(poll => {
         poll.options.forEach(option => {
           commands.add(option.toLowerCase(), (user, params) => {
-            user.whois().then(info => {
-              return polls.vote(params.shift(), info).then(() => { }, reject);
+            return user.whois()
+              .then(info => polls.vote(params.shift(), info))
+              .catch(error => {
+                console.error("Failed to process answer", error.stack);
+              });
             })
           });
         });
