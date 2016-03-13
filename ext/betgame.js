@@ -516,7 +516,7 @@ exports.configure = function(connection, modules) {
     ? commands.Command.ALLOW_ALL
     : commands.Command.ALLOW_AUTHED;
 
-  connection.addCommand("bet", (user, params) => {
+  connection.addCommand("bet", perms, (user, params) => {
     return new Promise((resolve, reject) => {
       if (params.length == 0) {
         game.userBets(user).then(bets => {

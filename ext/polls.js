@@ -3,6 +3,7 @@
 let EventEmitter = require("events");
 let moment = require("moment");
 let util = require("util");
+let Command = require("../core/commands").Command;
 
 class Polls {
   constructor(database) {
@@ -171,7 +172,7 @@ exports.configure = (connection, modules) => {
 
   polls._initDatabase();
 
-  connection.addCommand("poll", (user, params, message) => {
+  connection.addCommand("poll", Command.ALLOW_AUTHED, (user, params, message) => {
     let options = params.slice();
     let question = options.shift();
     let expires = moment().add(options.pop(), "seconds");
