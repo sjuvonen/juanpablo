@@ -193,7 +193,7 @@ exports.configure = (connection, modules) => {
       .then(info => polls.create(question, options, expires, info))
       .then(poll => {
         poll.options.forEach(option => {
-          commands.addCommand(option.toLowerCase(), (user, params) => {
+          commands.add(option.toLowerCase(), (user, params) => {
             user.whois().then(info => {
               return polls.vote(params.shift(), info).then(() => { }, reject);
             })
