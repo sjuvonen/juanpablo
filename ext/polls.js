@@ -27,7 +27,7 @@ class Polls {
 
       let params = {
         $question: question,
-        $user: user.user,
+        $user: user.account,
         $nick: user.nick,
         // $created: this.activePoll.created,
         $expires: moment(this.activePoll.expires).format("YYYY-MM-DD HH:mm:ss"),
@@ -68,7 +68,10 @@ class Polls {
         $nick: user.nick,
       };
       this.db.run(sql, params, error => {
-        error ? reject(new Error("You have already voted in this poll")) : resolve();
+        if (error) {
+          return reject(new Error("You have already voted in this poll"));
+        }
+        poll.votes.push(vote);
       });
     });
   }
