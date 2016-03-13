@@ -91,10 +91,10 @@ class Polls {
         question TEXT NOT NULL, \
         option_1 TEXT NOT NULL, \
         option_2 TEXT NOT NULL, \
-        option_3 TEXT NOT NULL, \
-        option_4 TEXT NOT NULL, \
-        option_5 TEXT NOT NULL, \
-        option_6 TEXT NOT NULL, \
+        option_3 TEXT, \
+        option_4 TEXT, \
+        option_5 TEXT, \
+        option_6 TEXT, \
         user TEXT NOT NULL, \
         nick TEXT NOT NULL, \
         created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
