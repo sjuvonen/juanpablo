@@ -168,7 +168,7 @@ class Stats {
 exports.configure = (connection, modules) => {
   let commands = connection.commands;
   let polls = new Polls(modules.get("database"));
-  let config = connection.config.polls;
+  let config = connection.config.modules.polls;
 
   polls._initDatabase();
 
