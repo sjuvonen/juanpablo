@@ -176,7 +176,7 @@ exports.configure = (connection, modules) => {
 
   polls._initDatabase();
 
-  connection.addCommand("poll", Command.ALLOW_AUTHED, (user, params, message) => {
+  connection.addCommand("poll", Command.ALLOW_ADMIN, (user, params, message) => {
     // By default params are split from message using white-space, so we join it and split by semicolon.
     let options = params.join(" ").split(";").map(raw => raw.trim());
     let question = options.shift();

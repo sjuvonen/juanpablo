@@ -9,9 +9,14 @@
       "channels": ["#foobar"]
     }
   ],
+  "admins": ["foobar_is_my_auth"],
   "database": {
     "sqlite": {
       "file": "data/database.sqlite"
+    },
+    "mongodb": {
+      "host": "localhost",
+      "database": "juanpablo"
     }
   },
   "modules": {
