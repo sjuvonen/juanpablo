@@ -55,7 +55,7 @@ class Command {
         case Command.ALLOW_AUTHED:
           user.whois().then(info => {
             info.account ? resolve() : reject(new Error("You need to auth to use this command"));
-          });
+          }, reject);
           break;
 
         case Command.ALLOW_ADMIN:

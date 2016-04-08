@@ -515,84 +515,80 @@ exports.configure = function(connection, modules) {
     ? commands.Command.ALLOW_ALL
     : commands.Command.ALLOW_AUTHED;
 
-  connection.addCommand("bet", perms, (user, params) => {
-    return new Promise((resolve, reject) => {
-      if (params.length == 0) {
-        game.userBets(user).then(bets => {
-          if (!bets) {
-            return resolve("You have not placed any bets for this round");
-          }
-          let line = [bets.d1, bets.d2, bets.d3].map((name, i) => {
-            return util.format("%d. %s", i+1, name);
-          }).join("; ");
-
-          resolve("Your bets for this round: " + line);
-        });
-      } else {
-        if (!game.betsAllowed) {
-          let datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
-          throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
+  connection.addCommand("bet", perms, (user, params) => new Promise((resolve, reject) => {
+    if (params.length == 0) {
+      game.userBets(user).then(bets => {
+        if (!bets) {
+          return resolve("You have not placed any bets for this round");
         }
+        let line = [bets.d1, bets.d2, bets.d3].map((name, i) => {
+          return util.format("%d. %s", i+1, name);
+        }).join("; ");
 
-        if (params.length != 3) {
-          throw new Error("Need three names to bet");
-        }
-
-        params.forEach(name => {
-          if (name.length < 3) {
-            throw new Error("Name length has to be at least three characters");
-          }
-        });
-
-        game.bet(...([user].concat(params))).then(resolve, reject);
+        resolve("Your bets for this round: " + line);
+      });
+    } else {
+      if (!game.betsAllowed) {
+        let datestr = moment.utc(game.betsOpen).format("MMMM D, HH:mm UTC");
+        throw new Error(util.format("Bets will be allowed after %s, until qualifying!", datestr));
       }
-    });
-  });
 
-  connection.addCommand("top", (user, params) => {
-    return new Promise((resolve, reject) => {
-      if (params.length) {
-        if (params[0] == "last") {
-          params[0] = seasoncalendar.lastRace.round;
+      if (params.length != 3) {
+        throw new Error("Need three names to bet");
+      }
+
+      params.forEach(name => {
+        if (name.length < 3) {
+          throw new Error("Name length has to be at least three characters");
         }
+      });
 
-        let race = seasoncalendar.race(params[0]);
+      game.bet(...([user].concat(params))).then(resolve, reject);
+    }
+  }));
 
-        if (!race) {
-          return resolve("Invalid round " + params[0]);
-        }
+  connection.addCommand("top", (user, params) => new Promise((resolve, reject) => {
+    if (params.length) {
+      if (params[0] == "last") {
+        params[0] = seasoncalendar.lastRace.round;
+      }
 
-        game.scores(params[0]).then(points => {
-          if (points.length) {
-            let line = points.map((row, i) => {
-              return util.format("%s %d", row.nick, row.points);
-            }).join("; ");
-            resolve({
-              content: util.format("Points for %s: %s", race.title, line),
-              type: "notice",
-            });
-          } else {
-            resolve("No data for " + race.title);
-          }
-        }, error => {
-          console.error("betgame.top:", error);
-        });
-      } else {
-        game.topScores().then(points => {
+      let race = seasoncalendar.race(params[0]);
+
+      if (!race) {
+        return resolve("Invalid round " + params[0]);
+      }
+
+      game.scores(params[0]).then(points => {
+        if (points.length) {
           let line = points.map((row, i) => {
             return util.format("%s %d", row.nick, row.points);
           }).join("; ");
-          let race = seasoncalendar.race(points[0].round);
           resolve({
-            content: util.format("Points after %s: %s", race.title, line),
+            content: util.format("Points for %s: %s", race.title, line),
             type: "notice",
           });
-        }, error => {
-          console.error("betgame.top:", error);
+        } else {
+          resolve("No data for " + race.title);
+        }
+      }, error => {
+        console.error("betgame.top:", error);
+      });
+    } else {
+      game.topScores().then(points => {
+        let line = points.map((row, i) => {
+          return util.format("%s %d", row.nick, row.points);
+        }).join("; ");
+        let race = seasoncalendar.race(points[0].round);
+        resolve({
+          content: util.format("Points after %s: %s", race.title, line),
+          type: "notice",
         });
-      }
-    });
-  });
+      }, error => {
+        console.error("betgame.top:", error);
+      });
+    }
+  }));
 
   seasoncalendar.events.on("race.week.begin", () => {
     let notify = function() {
