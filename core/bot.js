@@ -72,18 +72,18 @@ class TimedObjectCache {
   }
 
   get expireTime() {
-    return this.options.expires * 1000;
+    return this.options.expire * 1000;
   }
 }
 
 class UserCache {
   constructor(config) {
-    this.nickCache = new Map;
-    this.hostCache = new Map;
-    this.authCache = new TimedObjectCache({expire: config.expire});
-
     this.config = config || {};
     this.timers = {};
+
+    this.nickCache = new TimedObjectCache(this.config);
+    this.hostCache = new Map;
+    this.authCache = new TimedObjectCache(this.config);
 
     // if (this.config.expire > 0) {
     //   this.timers.expire = setInterval(() => {
@@ -273,7 +273,7 @@ class Connection {
     this.commands = new CommandManager;
     this.events.on("command", proxy(this.onCommand, this));
 
-    this.whoisCache = new UserCache({expire: 300});
+    this.whoisCache = new UserCache({expire: 5});
     this.userCache = new UserCache({expire: 300});
 
     /**
@@ -316,7 +316,6 @@ class Connection {
       },
       filter: raw => {
         if (raw.command == "rpl_whoreply") {
-          console.log
           return {
             // self: raw.args[0],
             // server: raw.args[4],
