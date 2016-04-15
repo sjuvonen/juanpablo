@@ -80,7 +80,7 @@ class UserCache {
   constructor(config) {
     this.nickCache = new Map;
     this.hostCache = new Map;
-    this.authCache = new TimedObjectCache;
+    this.authCache = new TimedObjectCache({expire: config.expire});
 
     this.config = config || {};
     this.timers = {};
