@@ -45,11 +45,42 @@ class Bot {
   }
 }
 
+class TimedObjectCache {
+  constructor(options) {
+    this.data = new Map;
+    this.timestamps = new Map;
+    this.options = options;
+  }
+
+  get(key) {
+    if (this.timestamps.has(key)) {
+      if (Date.now() - this.timestamps.get(key) < this.expireTime) {
+        return this.data.get(key);
+      }
+      this.timestamps.delete(key);
+      this.data.delete(key);
+    }
+  }
+
+  set(key, data) {
+    this.data.set(key, data);
+    this.timestamps.set(key, Date.now());
+  }
+
+  get expireKey() {
+    return this.options.key;
+  }
+
+  get expireTime() {
+    return this.options.expires * 1000;
+  }
+}
+
 class UserCache {
   constructor(config) {
     this.nickCache = new Map;
     this.hostCache = new Map;
-    this.authCache = new Map;
+    this.authCache = new TimedObjectCache;
 
     this.config = config || {};
     this.timers = {};
