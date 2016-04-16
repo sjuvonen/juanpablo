@@ -128,6 +128,7 @@ class Connection {
     this.modules = new ModuleManager(this.services, new ModuleLoader(this.services));
 
     this.services.register("connection", this);
+    this.services.register("event.manager", this.events);
 
     this.services.registerFactory("whois", () => {
       return new Whois(this);

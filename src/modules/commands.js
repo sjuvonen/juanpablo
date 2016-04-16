@@ -109,24 +109,17 @@ class CommandManager {
 }
 
 exports.configure = services => {
-  services.get("event.manager").events.on("bot.message", message => {
+  services.get("event.manager").on("message", message => {
     if (Command.isCommand(message)) {
       let command = new Command(message);
       message.connection.events.emit("command", command);
     }
   });
 
-  let commands = new CommandManager;
+  services.registerFactory("command.manager", () => new CommandManager(services.get("whois")));
 
-  services.get("event.manager").events.on("bot.command", command => {
-    return commands.execute(command.command, command.nick, command.params).then(result => {
-      command.send(result);
-    }, error => {
-      command.send("Error: " + error.toString());
-    });
-  });
-
-  commands.add("help", user => {
-    return Promise.resolve("Commands: " + [...commands.commands.keys()].join(", "));
+  services.get("event.manager").on("command", command => {
+    return services.get("command.manager").execute(command.command, command.nick, command.params)
+      .then(result => command.send(result), error => command.send(error.toString()));
   });
 };
