@@ -1,54 +1,11 @@
 "use strict";
 
-let EventEmitter = require("events");
+let EventManager = require("colibre/src/events").EventManager;
 let http = require("http");
 let https = require("https");
 let urllib = require("url");
-let proxy = require("./proxy");
 
 class Download {
-  constructor(url) {
-    this.url = typeof url == "string" ? url : null;
-    this.events = new EventEmitter;
-    this.aborted = false;
-  }
-
-  abort() {
-    this.aborted = true;
-    this.request.abort();
-  }
-
-  on(event, callback) {
-    this.events.on(event, callback);
-    return this;
-  }
-
-  off(event, callback) {
-    this.events.off(event, callback);
-    return this;
-  }
-
-  start() {
-    let download = this;
-    return new Promise((resolve, reject) => {
-      this.resolve(download.url).then(response => {
-        let chunks = [];
-
-        response.on("data", proxy(chunks.push, chunks));
-        response.on("end", () => {
-          if (!download.aborted) {
-            let result = {
-              data: Buffer.concat(chunks),
-              headers: response.headers,
-            };
-            download.events.emit("end", result);
-            resolve(result);
-          }
-        });
-      }, reject);
-    });
-  }
-
   static parseUrl(url) {
     if (url.indexOf("://") == -1) {
       url = "http://" + url;
@@ -70,6 +27,45 @@ class Download {
     let client = info.protocol == "https:" ? https : http;
     let request = client.get(info);
     return request;
+  }
+
+  constructor(url) {
+    this.url = typeof url == "string" ? url : null;
+    this.events = new EventManager;
+    this.aborted = false;
+  }
+
+  abort() {
+    this.aborted = true;
+    this.request.abort();
+  }
+
+  on(event, callback) {
+    this.events.on(event, callback);
+    return this;
+  }
+
+  off(event, callback) {
+    this.events.off(event, callback);
+    return this;
+  }
+
+  start() {
+    return this.resolve(this.url).then(response => new Promise((resolve, reject) => {
+      let chunks = [];
+
+      response.on("data", chunk => chunks.push(chunk));
+      response.on("end", () => {
+        if (!this.aborted) {
+          let result = {
+            data: Buffer.concat(chunks),
+            headers: response.headers,
+          };
+          this.events.emit("end", result);
+          resolve(result);
+        }
+      });
+    }));
   }
 
   /**

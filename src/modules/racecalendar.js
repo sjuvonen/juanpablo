@@ -13,7 +13,8 @@ let EventSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ["practise", "qualifying", "race", "test"]
-  }
+  },
+  results: [String]
 });
 
 EventSchema.statics.findNext = function(event_type) {
@@ -30,21 +31,6 @@ Event.RACE = "race";
 Event.PRACTISE = "practise";
 Event.QUALIFYING = "qualifying";
 Event.TEST = "test";
-
-class EventCalendarImporter {
-  constructor(parser) {
-    this.parser = parser;
-  }
-
-  importCalendar(data) {
-    let chain = [];
-    for (let entry of this.parser.parse(data)) {
-      let event = new Event(entry);
-      chain.push(event.save());
-    }
-    return Promise.all(chain);
-  }
-}
 
 class IcsParser {
   * parse(data) {
@@ -86,12 +72,13 @@ class IcsParser {
 }
 
 exports.configure = services => {
+  // Import calendar from file if current season has no events.
   services.get("database").model("event").where({season: (new Date).getFullYear()}).count().then(count => {
     if (!count) {
       let source = services.get("config").get("modules.racecalendar.file");
       let icsdata = require("fs").readFileSync(source).toString();
-      let importer = new EventCalendarImporter(new IcsParser);
-      importer.importCalendar(icsdata).catch(error => console.error(error.stack));
+      let importer = services.get("mongoose.importer", Event, new IcsParser);
+      importer.importData(icsdata).catch(error => console.error(error.stack));
     }
   });
 };

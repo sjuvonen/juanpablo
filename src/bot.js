@@ -4,7 +4,6 @@ let events = require("colibre/src/events");
 let datatree = require("colibre/src/util/datatree");
 let irc = require("irc");
 let util = require("util");
-let CommandManager = require("./commands").CommandManager;
 let ModuleManager = require("colibre/src/module-manager").ModuleManager;
 let ServiceManager = require("colibre/src/service-manager").ServiceManager;
 
