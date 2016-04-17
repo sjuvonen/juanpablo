@@ -33,8 +33,8 @@
     "files": {
       "storage": "./data"
     },
-    "seasoncalendar": {
-      "file": "./data/season2015.ics"
+    "racecalendar": {
+      "file": "./data/season2016.ics"
     },
     "standings": {
       "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2015-driver-standings.html",
@@ -69,7 +69,7 @@
           "url": "http://www.f1technical.net/rss/articles.xml"
         },
         {
-          "name": "Motosport",
+          "name": "Motorsport",
           "url": "http://www.motorsport.com/rss/category/f1/news"
         },
         {
