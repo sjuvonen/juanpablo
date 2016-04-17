@@ -97,10 +97,11 @@ class ModuleLoader {
 
   load(path, name) {
     try {
+      console.log("load", name);
       let module = require(util.format("%s/%s", path, name));
       return Promise.resolve(module);
     } catch (error) {
-      console.error(name + ":", error.toString());
+      console.error("module.load:", error.toString());
       return Promise.reject(error);
     }
   }
