@@ -260,7 +260,7 @@ class Message {
   }
 
   get message() {
-    console.log("Message.message is deprecated");
+    console.warn("Message.message is deprecated");
     return this.content;
   }
 

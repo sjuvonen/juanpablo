@@ -38,6 +38,27 @@ SeasonSchema.statics.findCurrent = function() {
   return Promise.resolve(this.findOne({_id: (new Date).getFullYear()}));
 };
 
+SeasonSchema.statics.driversForNames = function(rawnames, year) {
+  if (!year) {
+    year = (new Date).getFullYear();
+  }
+  let names = rawnames.map(name => name.toLowerCase());
+  return this.findOne({_id: year})
+    .then(season => {
+      return names.map(name => {
+        for (let driver of season.drivers.values()) {
+          if (driver.code.toLowerCase() == name) {
+            return driver;
+          }
+          if (driver.lastName.substring(0, name.length).toLowerCase() == name) {
+            return driver;
+          }
+        }
+        throw new Error(util.format("No match found for '%s'", name));
+      });
+    });
+};
+
 let Season = mongoose.model("season", SeasonSchema);
 
 class ErgastParser {

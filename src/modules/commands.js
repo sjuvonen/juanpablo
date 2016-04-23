@@ -25,7 +25,7 @@ class Command {
   }
 
   get params() {
-    return this.message.message.split(/\s+/).slice(1);
+    return this.message.message.trim().split(/\s+/).slice(1);
   }
 }
 
