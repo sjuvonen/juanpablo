@@ -1,5 +1,13 @@
 "use strict";
 
+if (!("values" in Array.prototype)) {
+  Array.prototype.values = function * () {
+    for (let i = 0; i < this.length; i++) {
+      yield this[i];
+    }
+  };
+}
+
 let config = require("./config");
 let Bot = require("./core/bot").Bot;
 let bot = new Bot(config);
