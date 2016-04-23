@@ -121,7 +121,7 @@ exports.configure = services => {
   let pagetitle = new PageTitle;
   let connection = services.get("connection");
 
-  connection.events.on("message", message => pagetitle.handleMessage(message.content).then(title => {
+  services.get("event.manager").on("message", message => pagetitle.handleMessage(message.content).then(title => {
     message.reply("> " + title);
   }));
 };
