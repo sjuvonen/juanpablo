@@ -240,7 +240,7 @@ class Message {
     let to = (reply.type == "notice" || this.is("pm")) ? this.nick : this.to;
 
     try {
-      console.log("RT", reply);
+      // console.log("RT", reply);
       this.connection[reply.type || "message"].call(this.connection, to, reply.content);
     } catch (error) {
       console.error("message.reply:", error.stack);
@@ -260,6 +260,11 @@ class Message {
   }
 
   get message() {
+    console.log("Message.message is deprecated");
+    return this.content;
+  }
+
+  get content() {
     return this.raw.args[1];
   }
 
