@@ -1,6 +1,6 @@
 "use strict";
 
-let EventManager = require("colibre/src/events").EventManager;
+let EventManager = require("events");
 let http = require("http");
 let https = require("https");
 let urllib = require("url");
