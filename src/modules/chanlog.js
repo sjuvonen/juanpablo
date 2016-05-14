@@ -120,7 +120,6 @@ class Logger {
 
       return entry.save();
     }).then(status => {
-      console.log("M", status);
     }, error => {
       console.error(error.stack);
     });
