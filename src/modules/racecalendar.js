@@ -17,8 +17,20 @@ let EventSchema = new mongoose.Schema({
   results: [String]
 });
 
+EventSchema.statics.findCurrent = function() {
+
+};
+
 EventSchema.statics.findNext = function(event_type) {
-  return Promise.resolve(this.find({type: event_type, season: (new Date).getFullYear()}));
+  let params = {
+    start: {
+      $gt: new Date
+    }
+  };
+  if (event_type) {
+    params.type = event_type;
+  }
+  return Promise.resolve(this.findOne(params).sort("start"));
 };
 
 EventSchema.statics.findNextRace = function() {
@@ -80,5 +92,52 @@ exports.configure = services => {
       let importer = services.get("mongoose.importer", Event, new IcsParser);
       importer.importData(icsdata).catch(error => console.error(error.stack));
     }
+  });
+
+  services.get("command.manager").add("next", () => {
+    return Event.findNext().then(event => {
+      let date = moment.utc(event.start);
+      let diff = moment.duration(date.diff());
+      let timestamp = date.format("MMMM D, HH:mm UTC");
+      let display = [event.name + ": ", timestamp];
+
+      if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
+        display.push(" (in");
+
+        if (diff.months() == 1) {
+          display.push(" 1 month");
+        } else if (diff.months() > 1) {
+          display.push(util.format(" %d months", diff.months()));
+        }
+
+        if (diff.weeks() == 1) {
+          display.push(" 1 week");
+        } else if (diff.months() > 1) {
+          display.push(util.format(" %d weeks", diff.months()));
+        }
+
+        if (diff.days() == 1) {
+          display.push(" 1 day");
+        } else if (diff.days() > 1) {
+          display.push(util.format(" %d days", diff.days() % 7));
+        }
+
+        if (diff.hours() == 1) {
+          display.push(" 1 hour");
+        } else if (diff.hours() > 1) {
+          display.push(util.format(" %d hours", diff.hours()));
+        }
+
+        if (diff.minutes() == 1) {
+          display.push(" 1 minute");
+        } else if (diff.minutes() > 1) {
+          display.push(util.format(" %d minutes", diff.minutes()));
+        }
+
+        display.push(")");
+      }
+
+      return display.join("");
+    });
   });
 };

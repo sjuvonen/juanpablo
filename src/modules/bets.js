@@ -1,6 +1,8 @@
 "use strict";
 
+let moment = require("moment");
 let mongoose = require("mongoose");
+let util = require("util");
 
 let BetSchema = new mongoose.Schema({
   user: String,
@@ -20,27 +22,84 @@ let BetSchema = new mongoose.Schema({
   },
 });
 
+BetSchema.statics.isBetWindowOpen = function() {
+  return this.db.model("event").findNext("qualifying").then(event => {
+    if (event) {
+      let min = moment(event.start).startOf("isoweek");
+      if (min.isBefore()) {
+        return Promise.resolve(event.start);
+      } else {
+        let date = min.format("MMMM D, HH:mm UTC");
+        let message = util.format("Bets will be allowed after %s, until qualifying!", date);
+        throw new Error(message);
+      }
+    } else {
+      throw new Error("Bets are not allowed");
+    }
+  });
+};
+
+BetSchema.statics.userBets = function(nick, round) {
+  return this.findOne({nick: nick, round: round, season: (new Date).getFullYear()});
+};
+
+BetSchema.statics.setUserBets = function(account, round, names) {
+  return this.db.model("season").driversForNames(names).then(drivers => {
+    let query = {
+      user: account.account,
+      season: (new Date).getFullYear(),
+      round: round,
+    };
+    let values = {
+      nick: account.nick,
+      user: query.user,
+      season: query.season,
+      round: query.round,
+      bets: drivers,
+      created: new Date,
+    };
+    return Bet
+      .update({user: account.account, season: 2016, round: 1}, values, {upsert: true})
+      .then(status => drivers);
+  });
+};
+
 let Bet = mongoose.model("bet", BetSchema);
 
 exports.configure = services => {
   let db = services.get("database");
+  let whois = services.get("whois");
+  let commands = services.get("command.manager");
+  let round = 1;
 
-  services.get("command.manager").add("bet", (user, ...names) => {
+  commands.add("bet", (nick, ...names) => {
     if (names.length == 0) {
-      console.log("return bets");
-      return Promise.resolve("Your bets: 1. Foo 2. Bar 3. Baz");
+      return Bet.userBets(nick, 1).then(doc => {
+        if (doc) {
+          let names = doc.bets.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
+          return util.format("%s: %s", nick, names.join(" "));
+        } else {
+          return Promise.resolve(util.format("%s: You have no bets for this round", nick));
+        }
+      });
+    } else {
+      return whois.auth(nick)
+        .catch(() => ({nick: nick, account: nick + "_auth"}))
+        .then(account => Bet.setUserBets(account, 1, names))
+        .then(drivers => {
+          let names = drivers.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
+          return util.format("%s: %s [OK]", nick, names.join(" "));
+        });
     }
-    if (names.length != 3) {
-      console.log("reject betting");
+  })
+  .validate(() => Bet.isBetWindowOpen())
+  .validate((nick, ...names) => {
+    if (names.length != 0 && names.length != 3) {
       return Promise.reject("Need three names to bet");
     }
-    return db.model("season").driversForNames(names).then(drivers => {
-      let bet = {user: "foobar", "nick": "FooBar", season: 2016, round: 1, bets: drivers, created: new Date};
-      Bet.update({user: "foobar", season: 2016, round: 1}, bet, {upsert: true}).then(status => {
-        console.log("S", status);
-      }, error => {
-        console.error("E", error.stack);
-      })
-    });
+  });
+
+  commands.add("top", (nick, names) => {
+    throw new Error("Command is disabled for now!");
   });
 };

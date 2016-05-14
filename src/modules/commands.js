@@ -2,6 +2,7 @@
 
 let events = require("colibre/src/events");
 let util = require("util");
+let mapWait = require("../collection").mapWait;
 
 class Command {
   static isCommand(message) {
@@ -54,6 +55,12 @@ class Context {
     this.name = name;
     this.callback = args.pop();
     this.permissions = args.length ? args.shift() : Command.ALLOW_ALL;
+    this.validators = [];
+  }
+
+  validate(callback) {
+    this.validators.push(callback);
+    return this;
   }
 }
 
@@ -68,6 +75,7 @@ class CommandManager {
       throw new Error(util.format("Command %s is already registered", name));
     }
     this.commands.set(name, new Context(name, ...args));
+    return this.commands.get(name);
   }
 
   get(name) {
@@ -79,7 +87,9 @@ class CommandManager {
   }
 
   execute(command_id, nick, params) {
-    return this.access(command_id, nick).then(context => context.callback(nick, ...params));
+    return this.access(command_id, nick)
+      .then(context => mapWait(context.validators, callback => callback(nick, ...params)).then(() => context))
+      .then(context => context.callback(nick, ...params));
   }
 
   access(command_id, nick) {

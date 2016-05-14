@@ -128,6 +128,7 @@ class Connection {
     this.modules = new ModuleManager(this.services, new ModuleLoader(this.services));
 
     this.services.register("connection", this);
+    this.services.register("config", this.config);
     this.services.register("event.manager", this.events);
 
     this.services.registerFactory("whois", () => {
@@ -184,23 +185,23 @@ class Connection {
   get client() {
     if (!this.meta.client) {
       let client = this.meta.client = new irc.Client(this.host, this.nick, this.config.data);
+      let events = this.events;
 
-      client.on("error", raw => {
-        console.error("client error", raw);
-      });
+      client.on("error", raw => events.emit("error", raw));
 
-      client.on("message", (nick, content, to, raw) => {
-        console.log("message", nick, to, content);
-        let message = new Message(raw, this);
-        this.events.emit("message", message);
-      });
+      client.on("message", (nick, content, to, raw) => events.emit("message", new Message(raw, this)));
+      client.on("nick", (old_nick, new_nick, channels, raw) => events.emit("nick", new NickEvent(raw)));
+      client.on("topic", (channel, topic, nick, raw) => events.emit("topic", new TopicEvent(raw)));
+      client.on("quit", (nick, reason, channels, raw) => events.emit("quit", new QuitEvent(raw)));
+      client.on("kill", (nick, reason, channels, raw) => events.emit("quit", new QuitEvent(raw)));
+      client.on("part", (nick, reason, channels, raw) => events.emit("quit", new PartEvent(raw)));
+      client.on("join", (a, b, raw) => events.emit("join", new JoinEvent(raw)));
+      client.on("action", (a, b, c, raw) => events.emit("action", new UserActionEvent(raw)));
+      client.on("-mode", (channel, by, mode, target, raw) => events.emit("mode", new ModeChangeEvent(raw)));
+      client.on("+mode", (channel, by, mode, target, raw) => events.emit("mode", new ModeChangeEvent(raw)));
 
-      client.on("nick", (old_nick, new_nick, channels, raw) => {
-        this.events.emit("nick", {
-          nick: new_nick,
-          oldNick: old_nick,
-          channels: channels,
-        });
+      client.on("kick", (...args) => {
+        console.log("KICK", args);
       });
 
       client.on("whois", info => {
@@ -255,22 +256,109 @@ class Message {
     return this.raw.nick;
   }
 
+  get host() {
+    return this.raw.host;
+    // return util.format("%s@%s", this.raw.user, this.raw.host);
+  }
+
+  get user() {
+    return this.raw.user;
+  }
+
   get to() {
     return this.raw.args[0];
   }
 
   get message() {
-    console.warn("Message.message is deprecated");
     return this.content;
   }
 
   get content() {
+    console.warn("Message.content is deprecated");
     return this.raw.args[1];
   }
 
   get channel() {
     return this.is("msg") ? this.to : null;
   }
+}
+
+class BaseChannelEvent {
+  constructor(raw) {
+    this.raw = raw;
+  }
+
+  get nick() {
+    return this.raw.nick;
+  }
+
+  get host() {
+    return this.raw.host;
+    // return util.format("%s@%s", this.raw.user, this.raw.host);
+  }
+
+  get user() {
+    return this.raw.user;
+  }
+}
+
+class ChannelEvent extends BaseChannelEvent {
+  get channel() {
+    return this.raw.args[0];
+  }
+}
+
+class NickEvent extends BaseChannelEvent {
+  get nick() {
+    return this.raw.args[0];
+  }
+
+  get oldNick() {
+    return this.raw.nick;
+  }
+}
+
+class TopicEvent extends ChannelEvent {
+  get topic() {
+    return this.raw.args[1];
+  }
+}
+
+class ModeChangeEvent extends ChannelEvent {
+  get mode() {
+    return this.raw.args[1];
+  }
+
+  get target() {
+    return this.raw.args[2];
+  }
+}
+
+class UserActionEvent extends ChannelEvent {
+  get action() {
+    // Action seems to be formatted as '\u0001ACTION foobar\u0001'
+    return this.args[1].substring(8, this.args[0] - 1);
+  }
+}
+
+class JoinEvent extends ChannelEvent {
+
+}
+
+class PartEvent extends ChannelEvent {
+  get message() {
+    return this.raw.args[1];
+  }
+}
+
+class QuitEvent extends BaseChannelEvent {
+  get message() {
+    return this.raw.args[0].substr(6);
+  }
+}
+
+class KickEvent extends BaseChannelEvent {
+
 }
 
 /**
