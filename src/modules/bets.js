@@ -202,13 +202,13 @@ exports.configure = services => {
       return Bet.pointsForRound(round).then(result => {
         let points = result.bets.map(bet => util.format("%s %d", bet.nick, bet.points));
         let message = util.format("Score for %s: %s", result.name, points.join("; "));
-        return message;
+        return {type: "notice", content: message};
       });
     } else {
       return Bet.pointsForSeason().then(result => {
         let points = result.bets.map(bet => util.format("%s %d", bet.nick, bet.points));
         let message = util.format("Points after %s: %s", result.name, points.join("; "));
-        return message;
+        return {type: "notice", content: message};
       });
     }
   });
