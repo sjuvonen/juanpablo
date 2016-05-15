@@ -17,8 +17,16 @@ let EventSchema = new mongoose.Schema({
   results: [String]
 });
 
-EventSchema.statics.findCurrent = function() {
-
+EventSchema.statics.findPrevious = function(event_type) {
+  let params = {
+    end: {
+      $lt: new Date
+    }
+  };
+  if (event_type) {
+    params.type = event_type;
+  }
+  return Promise.resolve(this.findOne(params).sort("-end"));
 };
 
 EventSchema.statics.findNext = function(event_type) {

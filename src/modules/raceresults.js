@@ -86,17 +86,45 @@ class ErgastWatcher {
 }
 
 exports.configure = services => {
-  // let watcher = new ErgastWatcher(2016, 2);
-  // watcher.watch()
-  //   .then(result => Result.update({season: result.season, round: result.round}, result, {upsert: true}))
-  //   .then(() => {
-  //     console.log("Updated result");
-  //   });
+  let commands = services.get("command.manager");
+  let database = services.get("database");
+  let events = services.get("event.manager");
+  let Event = database.model("event");
+  let season = (new Date).getFullYear();
 
-  services.get("command.manager").add("points", () => {
-    return services.get("database").model("result").driverStandings()
+  commands.add("points", () => {
+    return Result.driverStandings()
       .then(standings => standings.slice(0, 10).map((row, i) => util.format("%d. %s (%d)", i+1, row[0], row[1])))
       .then(standings => standings.join(" "));
   });
 
+  let watchers = new Map;
+
+  let watchResults = () => {
+    Result.find({season: season}).sort("-round")
+      .then(results => results.map(r => r.round))
+      .then(rounds => Event.find({
+        season: season,
+        type: "race",
+        end: {$lt: new Date},
+        round: {$not: {$in: rounds}}
+      }))
+      .then(races => races.map(race => {
+        let wid = util.format("%d:%d", race.season, race.round);
+        if (!watchers.has(wid)) {
+          let watcher = new ErgastWatcher(race.season, race.round);
+          watcher.watch()
+            .then(result => Result.update({season: result.season, round: result.round}, result, {upsert: true}))
+            .then(() => events.emit("raceresults.result", {season: race.season, round: race.round}))
+            .then(() => watchers.remove(wid))
+            .then(() => console.log("Updated result for round", race.round));
+
+          watchers.set(wid, watcher);
+        }
+      }));
+  };
+
+  watchResults();
+
+  setInterval(watchResults, 1000 * 60 * 10);
 };

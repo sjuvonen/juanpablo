@@ -100,7 +100,7 @@ class ModuleLoader {
       let module = require(util.format("%s/%s", path, name));
       return Promise.resolve(module);
     } catch (error) {
-      console.error("module.load:", error.toString());
+      console.error("module.load:", error.stack);
       return Promise.reject(error);
     }
   }
@@ -405,7 +405,7 @@ class AgingCache {
 class Whois {
   constructor(connection) {
     this.connection = connection;
-    this.cache = new AgingCache(10000);
+    this.cache = new AgingCache(30000);
   }
 
   whois(nick) {
