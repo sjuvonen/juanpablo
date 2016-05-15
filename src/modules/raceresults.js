@@ -25,6 +25,7 @@ ResultSchema.statics.latestResult = function() {
 
 ResultSchema.statics.driverStandings = function() {
   return this.latestResult()
+    .then(last => last || {})
     .then(last => this.find({season: last.season}))
     .then(races => races.reduce((standings, race) => {
       race.results.forEach(item => {
@@ -34,7 +35,8 @@ ResultSchema.statics.driverStandings = function() {
       });
       return standings;
     }, new Map))
-  .then(standings => [...standings.entries()].sort((a, b) => b[1] - a[1]));
+  .then(standings => [...standings.entries()].sort((a, b) => b[1] - a[1]))
+  .then(entries => entries.length ? entries : Promise.reject(new Error("No points data found.")));
 };
 
 let Result = mongoose.model("result", ResultSchema);

@@ -89,7 +89,11 @@ class CommandManager {
   execute(command_id, nick, params) {
     return this.access(command_id, nick)
       .then(context => mapWait(context.validators, callback => callback(nick, ...params)).then(() => context))
-      .then(context => context.callback(nick, ...params));
+      .then(context => context.callback(nick, ...params))
+      .catch(error => {
+        console.error("command failed", error.stack);
+        return Promise.reject(error);
+      });
   }
 
   access(command_id, nick) {

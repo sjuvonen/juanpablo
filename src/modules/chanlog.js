@@ -195,10 +195,15 @@ class IdentityManager {
         }
 
         user.set({host: hostmask, seen: new Date}).save();
+
+        // Break out of the async loop.
         throw new Error("stop");
-      }, error => {
-        // pass
-      })).then(() => {
+      }))
+      .then(() => {
+        /*
+         * NOTE: This block executes when user was not found.
+         */
+
         let user = new User({
           network: this.network,
           nick: raw.nick,
@@ -209,6 +214,9 @@ class IdentityManager {
         });
 
         user.save().then(resolve, reject);
+      })
+      .catch(error => {
+        // Ignore the "stop" error thrown inside mapWait.
       });
     });
   }
