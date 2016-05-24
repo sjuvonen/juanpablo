@@ -205,7 +205,7 @@ class Connection {
       });
 
       client.on("whois", info => {
-        console.log("event whois");
+        console.log("event whois", info);
       });
     }
     return this.meta.client;
@@ -410,12 +410,12 @@ class Whois {
 
   whois(nick) {
     return new Promise((resolve, reject) => {
-      nick = nick.toLowerCase();
-      if (this.cache.has(nick)) {
-        return resolve(this.cache.get(nick));
+      let cache_key = nick.toLowerCase();
+      if (this.cache.has(cache_key)) {
+        return resolve(this.cache.get(cache_key));
       }
       this.connection.client.whois(nick, info => {
-        this.cache.set(nick, info);
+        this.cache.set(nick.toLowerCase(), info);
         resolve(info);
       });
     });
