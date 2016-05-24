@@ -203,10 +203,6 @@ class Connection {
       client.on("kick", (...args) => {
         console.log("KICK", args);
       });
-
-      client.on("whois", info => {
-        console.log("event whois", info);
-      });
     }
     return this.meta.client;
   }
