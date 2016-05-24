@@ -241,7 +241,7 @@ class IdentifyByAuth extends IdentityPlugin {
 
   identify(raw) {
     return this.whois.auth(raw.nick).then(info => {
-      return User.findOne({account: info.account, network: network}).then(user => {
+      return User.findOne({account: info.account, network: this.network}).then(user => {
         if (user) {
           return user;
         } else {
