@@ -418,7 +418,7 @@ class Whois {
   }
 
   auth(nick) {
-    return this.whois(nick).then(info => info.account || Promise.reject(new Error("User not authed")));
+    return this.whois(nick).then(info => info.account ? info : Promise.reject(new Error("User not authed")));
   }
 }
 

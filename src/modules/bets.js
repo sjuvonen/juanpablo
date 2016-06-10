@@ -66,12 +66,13 @@ BetSchema.statics.setUserBets = function(account, round, names) {
     };
     let values = {
       nick: account.nick,
-      account: query.user,
+      account: account.account,
       season: query.season,
       round: query.round,
       bets: drivers,
       created: new Date,
     };
+    console.log("W", values);
     return Bet
       .update(query, values, {upsert: true})
       .then(status => drivers);
@@ -195,6 +196,7 @@ exports.configure = services => {
       });
     } else {
       return whois.auth(nick)
+        // .catch(() => ({nick: nick, account: nick + "_auth"}))
         .then(account => Bet.setUserBets(account, this.activeEvent.round, names))
         .then(drivers => {
           let names = drivers.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
