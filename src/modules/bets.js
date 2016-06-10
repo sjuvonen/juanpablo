@@ -39,6 +39,20 @@ BetSchema.statics.isBetWindowOpen = function() {
   });
 };
 
+BetSchema.statics.activeBetRound = function() {
+  let max_date = moment().utc().isoWeekday(7).hour(23).minute(59).toDate();
+  console.log("D", max_date);
+  let season = max_date.getFullYear();
+  return this.db.model("event").findOne({season: season, start: {$lte: max_date}}).sort("-start")
+    .then(event => {
+      if (event) {
+        return event;
+      } else {
+        throw new Error("No active round found");
+      }
+    });
+};
+
 BetSchema.statics.userBets = function(nick, round) {
   return this.findOne({nick: nick, round: round, season: (new Date).getFullYear()});
 };
@@ -168,11 +182,10 @@ exports.configure = services => {
   let events = services.get("event.manager");
   let Result = database.model("result");
   let Event = database.model("event");
-  let round = 1;
 
   commands.add("bet", (nick, ...names) => {
     if (names.length == 0) {
-      return Bet.userBets(nick, round).then(doc => {
+      return Bet.userBets(nick, this.activeEvent.round).then(doc => {
         if (doc) {
           let names = doc.bets.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
           return util.format("%s: %s", nick, names.join(" "));
@@ -182,8 +195,7 @@ exports.configure = services => {
       });
     } else {
       return whois.auth(nick)
-        // .catch(() => ({nick: nick, account: nick + "_auth"}))
-        .then(account => Bet.setUserBets(account, round, names))
+        .then(account => Bet.setUserBets(account, this.activeEvent.round, names))
         .then(drivers => {
           let names = drivers.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
           return util.format("%s: %s [OK]", nick, names.join(" "));
@@ -195,6 +207,12 @@ exports.configure = services => {
     if (names.length != 0 && names.length != 3) {
       return Promise.reject("Need three names to bet");
     }
+  })
+  .validate(() => {
+    return Bet.activeBetRound().then(event => {
+      // console.log("GOT EVENT", event);
+      this.activeEvent = event;
+    });
   });
 
   commands.add("top", (nick, round) => {
