@@ -72,7 +72,6 @@ BetSchema.statics.setUserBets = function(account, round, names) {
       bets: drivers,
       created: new Date,
     };
-    console.log("W", values);
     return Bet
       .update(query, values, {upsert: true})
       .then(status => drivers);
