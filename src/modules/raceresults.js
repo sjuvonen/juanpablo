@@ -64,7 +64,7 @@ class ErgastWatcher {
     this.season = season;
     this.round = round;
     this.url = util.format("http://ergast.com/api/f1/%d/%d/results.json", season, round);
-    this.interval = 10 * 1000;
+    this.interval = 1000 * 60 * 10;
   }
 
   watch() {
