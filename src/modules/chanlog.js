@@ -277,5 +277,7 @@ exports.configure = services => {
   let config = services.get("config");
   let users = new IdentityManager(services);
   let logger = new Logger(config.get("name"), database, events, users, whois);
+
+  services.register("chanlog.identity", users);
   services.register("chanlog.logger", logger);
 };
