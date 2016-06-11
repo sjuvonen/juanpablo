@@ -96,10 +96,10 @@ class CommandManager {
     this.commands.delete(name);
   }
 
-  execute(command_id, nick, params) {
-    return this.access(command_id, nick)
-      .then(context => mapWait(context.validators, callback => callback(nick, ...params)).then(() => context))
-      .then(context => context.callback(nick, ...params));
+  execute(command_id, data) {
+    return this.access(command_id, data.nick)
+      .then(context => mapWait(context.validators, callback => callback(data.nick, ...data.params)).then(() => context))
+      .then(context => context.callback(data));
   }
 
   access(command_id, nick) {
@@ -149,7 +149,7 @@ exports.configure = services => {
   });
 
   services.get("event.manager").on("command", command => {
-    return services.get("command.manager").execute(command.command, command.nick, command.params)
+    return services.get("command.manager").execute(command.command, command)
       .then(result => command.send(result), error => command.send(error.toString()));
   });
 };

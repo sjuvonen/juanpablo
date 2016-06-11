@@ -179,23 +179,23 @@ exports.configure = services => {
   let Result = database.model("result");
   let Event = database.model("event");
 
-  commands.add("bet", (nick, ...names) => {
+  commands.add("bet", command => {
+    let names = command.params;
     if (names.length == 0) {
-      return Bet.userBets(nick, this.activeEvent.round).then(doc => {
+      return Bet.userBets(command.nick, this.activeEvent.round).then(doc => {
         if (doc) {
           let names = doc.bets.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
-          return util.format("%s: %s", nick, names.join(" "));
+          return util.format("%s: %s", command.nick, names.join(" "));
         } else {
-          return Promise.resolve(util.format("%s: You have no bets for this round", nick));
+          return Promise.resolve(util.format("%s: You have no bets for this round", command.nick));
         }
       });
     } else {
-      return whois.auth(nick)
-        // .catch(() => ({nick: nick, account: nick + "_auth"}))
+      return whois.auth(command.nick)
         .then(account => Bet.setUserBets(account, this.activeEvent.round, names))
         .then(drivers => {
           let names = drivers.map((d, i) => util.format("%d. %s %s", i+1, d.firstName, d.lastName));
-          return util.format("%s: %s [OK]", nick, names.join(" "));
+          return util.format("%s: %s [OK]", command.nick, names.join(" "));
         });
     }
   })
@@ -212,7 +212,8 @@ exports.configure = services => {
     });
   });
 
-  commands.add("top", (nick, round) => {
+  commands.add("top", command => {
+    let round = command.params[0];
     if (round) {
       return Bet.pointsForRound(round).then(result => {
         let points = result.bets.map(bet => util.format("%s %d", bet.nick, bet.points));
