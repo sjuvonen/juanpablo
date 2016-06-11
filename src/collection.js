@@ -13,7 +13,6 @@ exports.mapWait = (items, callback) => {
         index++;
         run();
       }, error => {
-        console.error(error);
         reject(error);
       });
     };

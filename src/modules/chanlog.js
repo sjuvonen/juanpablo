@@ -94,6 +94,8 @@ class Logger {
         nick: event.nick,
       });
       return topic.save();
+    }).catch(error => {
+
     });
   }
 
@@ -119,9 +121,8 @@ class Logger {
       }
 
       return entry.save();
-    }).then(status => {
-    }, error => {
-      console.error(error.stack);
+    }).catch(error => {
+
     });
   }
 

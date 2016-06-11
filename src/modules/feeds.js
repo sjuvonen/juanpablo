@@ -82,7 +82,7 @@ class FeedWatcher {
 
   watch() {
     this.timer = setInterval(() => {
-      this.update().catch(error => console.error(error.stack));
+      this.update().catch(error => console.error("feed.watcher:", error.stack));
     }, this.interval);
   }
 
@@ -178,7 +178,7 @@ class FeedPublisher {
           let message = this.formatArticle(item);
           this.connection.amsg(message);
         }
-      }).catch(error => console.error(error.stack));
+      }).catch(error => console.error("feed.publisher:", error.stack));
   }
 
   formatArticle(article) {

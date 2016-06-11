@@ -52,7 +52,7 @@ exports.ALLOW_AUTHED = Command.ALLOW_AUTHED = 2;
 /**
  * Command is allowed to users specified in configuration.
  */
-exports.ALLOW_WHITELISTED = Command.ALLOW_WHITELISTED = 3;
+exports.ALLOW_WHITELIST = Command.ALLOW_WHITELIST = 3;
 
 class Context {
   constructor(name, ...args) {
@@ -123,9 +123,18 @@ class CommandManager {
             reject(Error("You need admin permissions to use this command"));
           });
 
-        case Command.ALLOW_WHITELISTED:
-          console.error("Command.ALLOW_WHITELISTED not supported yet");
-          return reject(new Error("Command.ALLOW_WHITELISTED not supported yet"));
+        case Command.ALLOW_WHITELIST:
+          return this.whois.auth(nick).then(account => {
+            let whitelist = this.config.whitelist[account.account.toLowerCase()];
+            if (whitelist && whitelist.indexOf(command_id) != -1) {
+              return resolve(context);
+            } else if (this.config.admins.indexOf(account.account.toLowerCase()) != -1) {
+              return resolve(context);
+            }
+            reject();
+          }).catch(error => {
+            reject(Error("You are not allowed to use this command"));
+          });
 
         default:
           return reject(new Error("Invalid command permissions"));
