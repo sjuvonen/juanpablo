@@ -280,7 +280,7 @@ class Message {
   }
 
   get content() {
-    console.warn("Message.content is deprecated");
+    // console.warn("Message.content is deprecated");
     return this.raw.args[1];
   }
 
