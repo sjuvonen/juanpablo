@@ -133,9 +133,7 @@ class Connection {
     this.services.register("config", this.config);
     this.services.register("event.manager", this.events);
 
-    this.services.registerFactory("whois", () => {
-      return new Whois(this);
-    });
+    this.services.registerFactory("whois", () => new Whois(this));
   }
 
   open() {
@@ -393,6 +391,7 @@ class Whois {
 
   auth(nick) {
     return this.whois(nick).then(info => info.account ? info : Promise.reject(new Error("User not authed")));
+    // return this.whois(nick).then(info => info.account ? info : {nick: info.nick, account: "demo"});
   }
 }
 
