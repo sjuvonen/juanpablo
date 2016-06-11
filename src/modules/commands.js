@@ -6,7 +6,7 @@ let mapWait = require("../collection").mapWait;
 
 class Command {
   static isCommand(message) {
-    return message.length > 3 && message.message[0] == "!" && message.message[1] != "!";
+    return message.length >= 2 && message.message[0] == "!" && message.message[1] != "!";
   }
 
   constructor(message) {
@@ -21,6 +21,10 @@ class Command {
     return this.message.nick;
   }
 
+  get channel() {
+    return this.message.channel;
+  }
+
   get command() {
     return this.message.message.split(/\s+/, 1)[0].substring(1);
   }
@@ -33,22 +37,22 @@ class Command {
 /**
  * Command is allowed to everyone.
  */
-Command.ALLOW_ALL = 0;
+exports.ALLOW_ALL = Command.ALLOW_ALL = 0;
 
 /**
  * Command is allowed to admins only.
  */
-Command.ALLOW_ADMIN = 1;
+exports.ALLOW_ADMIN = Command.ALLOW_ADMIN = 1;
 
 /**
  * Command is allowed to users who have authed to the server.
  */
-Command.ALLOW_AUTHED = 2;
+exports.ALLOW_AUTHED = Command.ALLOW_AUTHED = 2;
 
 /**
  * Command is allowed to users specified in configuration.
  */
-Command.ALLOW_USERS = 3;
+exports.ALLOW_WHITELISTED = Command.ALLOW_WHITELISTED = 3;
 
 class Context {
   constructor(name, ...args) {
@@ -65,7 +69,9 @@ class Context {
 }
 
 class CommandManager {
-  constructor(whois) {
+  constructor(whois, config) {
+    this.whois = whois;
+    this.config = config;
     this.commands = new Map;
     this.events = new events.AsyncEventManager;
   }
@@ -86,6 +92,10 @@ class CommandManager {
     }
   }
 
+  delete(name) {
+    this.commands.delete(name);
+  }
+
   execute(command_id, nick, params) {
     return this.access(command_id, nick)
       .then(context => mapWait(context.validators, callback => callback(nick, ...params)).then(() => context))
@@ -101,15 +111,21 @@ class CommandManager {
           return resolve(context);
 
         case Command.ALLOW_AUTHED:
-          return this.whois.auth(nick).then(account => account, error => new Error("You need to auth to use this command"));
+          return this.whois.auth(nick).then(account => context, error => new Error("You need to auth to use this command"));
 
         case Command.ALLOW_ADMIN:
-          console.error("Command.ALLOW_ADMIN not supported yet");
-          return reject(new Error("Command.ALLOW_ADMIN not supported yet"));
+          return this.whois.auth(nick).then(account => {
+            if (this.config.admins.indexOf(account.account.toLowerCase()) == -1) {
+              throw new Error;
+            }
+            resolve(context);
+          }).catch(error => {
+            reject(Error("You need admin permissions to use this command"));
+          });
 
-        case Command.ALLOW_USERS:
-          console.error("Command.ALLOW_USERS not supported yet");
-          return reject(new Error("Command.ALLOW_USERS not supported yet"));
+        case Command.ALLOW_WHITELISTED:
+          console.error("Command.ALLOW_WHITELISTED not supported yet");
+          return reject(new Error("Command.ALLOW_WHITELISTED not supported yet"));
 
         default:
           return reject(new Error("Invalid command permissions"));
@@ -126,7 +142,11 @@ exports.configure = services => {
     }
   });
 
-  services.registerFactory("command.manager", () => new CommandManager(services.get("whois")));
+  services.registerFactory("command.manager", () => {
+    let whois = services.get("whois");
+    let config = services.get("config").get("modules.commands");
+    return new CommandManager(whois, config);
+  });
 
   services.get("event.manager").on("command", command => {
     return services.get("command.manager").execute(command.command, command.nick, command.params)
