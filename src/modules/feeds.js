@@ -50,8 +50,6 @@ class FeedWatcher {
       let parser = new FeedParser({feedurl: this.feed.url});
       let threshold = new Date - this.interval;
 
-      threshold = new Date - 1000 * 60 * 80;
-
       req.on("error", reject);
       parser.on("error", reject);
 
