@@ -41,7 +41,6 @@ BetSchema.statics.isBetWindowOpen = function() {
 
 BetSchema.statics.activeBetRound = function() {
   let max_date = moment().utc().isoWeekday(7).hour(23).minute(59).toDate();
-  console.log("D", max_date);
   let season = max_date.getFullYear();
   return this.db.model("event").findOne({season: season, start: {$lte: max_date}}).sort("-start")
     .then(event => {
@@ -72,7 +71,7 @@ BetSchema.statics.setUserBets = function(account, round, names) {
       bets: drivers,
       created: new Date,
     };
-    return Bet
+    return this
       .update(query, values, {upsert: true})
       .then(status => drivers);
   });
@@ -134,8 +133,6 @@ BetSchema.statics.pointsForSeason = function(season) {
     }));
 }
 
-let Bet = mongoose.model("bet", BetSchema);
-
 class PointsCalculator {
   constructor(results) {
     this.results = results;
@@ -178,6 +175,7 @@ exports.configure = services => {
   let whois = services.get("whois");
   let commands = services.get("command.manager");
   let events = services.get("event.manager");
+  let Bet = database.model("bet", BetSchema);
   let Result = database.model("result");
   let Event = database.model("event");
 
@@ -237,104 +235,4 @@ exports.configure = services => {
       .then(bets => Promise.all(bets.map(bet => bet.save())))
       .then(() => console.log("Updated scores for round", event.round));
   });
-
-  // (new Bet({
-  //   account: "foobar_demo",
-  //   nick: "foobar",
-  //   season: 2016,
-  //   round: 3,
-  //   bets: [
-  //     {firstName: "Lewis", lastName: "Hamilton", code: "HAM"},
-  //     {firstName: "Kimi", lastName: "Räikkönen", code: "RAI"},
-  //     {firstName: "Sebastian", lastName: "Vettel", code: "VET"}
-  //   ]
-  // })).save();
-  //
-  // (new Bet({
-  //   account: "foobar_demo",
-  //   nick: "foobar",
-  //   season: 2016,
-  //   round: 2,
-  //   bets: [
-  //     {firstName: "Lewis", lastName: "Hamilton", code: "HAM"},
-  //     {firstName: "Nico", lastName: "Rosberg", code: "ROS"},
-  //     {firstName: "Jenson", lastName: "Button", code: "Button"}
-  //   ]
-  // })).save();
-  //
-  // (new Bet({
-  //   account: "foobar_demo",
-  //   nick: "foobar",
-  //   season: 2016,
-  //   round: 5,
-  //   bets: [
-  //     {firstName: "Nico", lastName: "Rosberg", code: "ROS"},
-  //     {firstName: "Kimi", lastName: "Räikkönen", code: "RAI"},
-  //     {firstName: "Fernando", lastName: "Alonso", code: "ALO"}
-  //   ]
-  // })).save();
-  //
-  // (new Bet({
-  //   account: "miska_demo",
-  //   nick: "miska",
-  //   season: 2016,
-  //   round: 3,
-  //   bets: [
-  //     {firstName: "Sebastian", lastName: "Vettel", code: "VET"},
-  //     {firstName: "Lewis", lastName: "Hamilton", code: "HAM"},
-  //     {firstName: "Kimi", lastName: "Räikkönen", code: "RAI"},
-  //   ]
-  // })).save();
-  //
-  // (new Bet({
-  //   account: "miska_demo",
-  //   nick: "miska",
-  //   season: 2016,
-  //   round: 5,
-  //   bets: [
-  //     {firstName: "Lewis", lastName: "Hamilton", code: "HAM"},
-  //     {firstName: "Nico", lastName: "Rosberg", code: "ROS"},
-  //       {firstName: "Sebastian", lastName: "Vettel", code: "VET"},
-  //   ]
-  // })).save();
-
-
-  // let sqlite = require("sqlite3");
-  // let source = new sqlite.Database("data/database.sqlite");
-
-  // database.model("season").findOne({_id: 2016}).then(season => {
-  //   let drivers = new Map(season.drivers.map(d => [d.firstName + " " + d.lastName, d]));
-  //   drivers.set("Pastor Maldonado", {firstName: "Pastor", lastName: "Maldonado", code: "MAL"});
-  //   drivers.set("Sergio Perez", {firstName: "Sergio", lastName: "Pérez", code: "PER"});
-  //   drivers.set("Roberto Merhi", {firstName: "Roberto", lastName: "Merhi", code: "MER"});
-  //   drivers.set("Nico Hulkenberg", {firstName: "Nico", lastName: "Hülkenberg", code: "HUL"});
-  //
-  //   source.all("SELECT * from betgame_bets", (error, rows) => {
-  //     rows.map(row => {
-  //       let bet = new Bet({
-  //         account: row.user,
-  //         nick: row.nick,
-  //         season: row.season,
-  //         round: row.round,
-  //         created: new Date(row.time),
-  //         bets: [row.d1, row.d2, row.d3].map(name => {
-  //           if (!drivers.has(name)) {
-  //             console.error("NO NAME", name);
-  //           }
-  //           return drivers.get(name)
-  //         }),
-  //       });
-  //       bet.save();
-  //     });
-  //   });
-  // });
-
-  // source.all("SELECT * FROM betgame_points WHERE season = 2015", (error, rows) => {
-  //   rows.map(row => {
-  //     Bet.findOne({account: row.user, season: row.season, round: row.round}).then(bet => {
-  //       bet.points = row.points;
-  //       bet.save();
-  //     });
-  //   });
-  // });
 };
