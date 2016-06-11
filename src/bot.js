@@ -6,6 +6,7 @@ let irc = require("irc");
 let util = require("util");
 let ModuleManager = require("colibre/src/module-manager").ModuleManager;
 let ServiceManager = require("colibre/src/service-manager").ServiceManager;
+let AgingCache = require("./collection").AgingCache;
 
 function initializeMeta(instance) {
   Object.defineProperty(instance, "meta", {
@@ -126,6 +127,7 @@ class Connection {
     this.config = new Config(config);
     this.events = new events.EventManager;
     this.modules = new ModuleManager(this.services, new ModuleLoader(this.services));
+    this.channels = new Set;
 
     this.services.register("connection", this);
     this.services.register("config", this.config);
@@ -165,6 +167,10 @@ class Connection {
     this.client.say(to, content);
   }
 
+  amsg(content) {
+    this.channels.forEach(channel => this.message(channel, content));
+  }
+
   notice(to, content) {
     this.client.notice(to, content);
   }
@@ -199,6 +205,12 @@ class Connection {
       client.on("action", (a, b, c, raw) => events.emit("action", new UserActionEvent(raw)));
       client.on("-mode", (channel, by, mode, target, raw) => events.emit("mode", new ModeChangeEvent(raw)));
       client.on("+mode", (channel, by, mode, target, raw) => events.emit("mode", new ModeChangeEvent(raw)));
+
+      client.on("join", (channel, nick) => {
+        if (nick == this.nick) {
+          this.channels.add(channel.toLowerCase());
+        }
+      });
 
       client.on("kick", (...args) => {
         console.log("KICK", args);
@@ -355,44 +367,6 @@ class QuitEvent extends BaseChannelEvent {
 
 class KickEvent extends BaseChannelEvent {
 
-}
-
-/**
- * Utility class for storing values that expire (are removed) automaticly after defined threshold time.
- */
-class AgingCache {
-  constructor(expire) {
-    this.expire = expire || Number.MAX_SAFE_INTEGER;
-    this.cache = new Map;
-    this.timestamps = new Map;
-  }
-
-  set(key, value) {
-    this.cache.set(key, value);
-    this.timestamps.set(key, Date.now());
-  }
-
-  get(key) {
-    if (this.has(key)) {
-      return this.cache.get(key);
-    }
-  }
-
-  has(key) {
-    if (!this.timestamps.has(key)) {
-      return false;
-    }
-    if (Date.now() - this.timestamps.get(key) >= this.expire) {
-      this.delete(key);
-      return false;
-    }
-    return true;
-  }
-
-  delete(key) {
-    this.cache.delete(key);
-    this.timestamps.delete(key);
-  }
 }
 
 /**
