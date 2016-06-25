@@ -117,7 +117,10 @@ exports.configure = services => {
             .then(result => Result.update({season: result.season, round: result.round}, result, {upsert: true}))
             .then(() => events.emit("raceresults.result", {season: race.season, round: race.round}))
             .then(() => watchers.remove(wid))
-            .then(() => console.log("Updated result for round", race.round));
+            .then(() => console.log("Updated result for round", race.round))
+            .catch(error => {
+              console.log("Updating results failed", error.stack);
+            });
 
           watchers.set(wid, watcher);
         }

@@ -9,7 +9,6 @@
       "channels": ["#foobar"]
     }
   ],
-  "admins": ["foobar_is_my_auth"],
   "database": {
     "sqlite": {
       "file": "data/database.sqlite"
@@ -21,24 +20,39 @@
   },
   "modules": {
     "enabled": [
-      "./ext/database",
-      "./ext/pagetitle",
-      "./ext/feeds",
-      "./ext/seasoncalendar",
-      "./ext/standings",
-      "./ext/betgame",
-      "./ext/chanlog",
-      "./ext/polls"
+      "demo",
+      "mongodb",
+      "commands",
+      "seasondata",
+      "racecalendar",
+      "raceresults",
+      "bets",
+      "chanlog",
+      "pagetitle",
+      "feeds",
+      "polls",
+      "rest",
+      "restapi"
     ],
-    "files": {
-      "storage": "./data"
+    "commands": {
+      "admins": ["demo"],
+      "whitelist": [
+        {
+          "demo": ["poll"]
+        }
+      ]
     },
     "racecalendar": {
       "file": "./data/season2016.ics"
     },
+    "seasondata": {
+      "source": {
+        "ergast": "http://ergast.com/api/f1/%d/drivers.json"
+      }
+    },
     "standings": {
-      "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2015-driver-standings.html",
-      "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2015-constructor-standings.html"
+      "drivers": "http://www.formula1.com/content/fom-website/en/championship/results/2016-driver-standings.html",
+      "teams": "http://www.formula1.com/content/fom-website/en/championship/results/2016-constructor-standings.html"
     },
     "feeds": {
       "refresh": 300,
@@ -88,6 +102,10 @@
           "file": "data/chanlog.sqlite"
         }
       }
+    },
+    "rest": {
+      "address": "localhost",
+      "port": 8000
     }
   }
 }
