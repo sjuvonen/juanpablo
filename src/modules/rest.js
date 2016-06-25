@@ -19,8 +19,6 @@ class Server {
       let address = this.config.address || "localhost";
       let port = this.config.port || 8000;
 
-      console.log(address, port);
-
       this.app.use((req, res, next) => {
         this.router.match(req.path, req.method, req.hostname)
           .then(match => {
