@@ -52,8 +52,6 @@ exports.configure = services => {
     let config = services.get("config").get("modules.rest");
     let server = new Server(config);
 
-    console.log("server loaded");
-    services.get("event.manager").on("connect", () => console.log("HELLO"));
     services.get("event.manager").on("connect", () => server.start());
 
     return server;

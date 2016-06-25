@@ -39,8 +39,6 @@ ResultSchema.statics.driverStandings = function() {
   .then(entries => entries.length ? entries : Promise.reject(new Error("No points data found.")));
 };
 
-let Result = mongoose.model("result", ResultSchema);
-
 class ErgastParser {
   parse(json) {
     let data = JSON.parse(json).MRData.RaceTable.Races[0];
@@ -90,6 +88,7 @@ exports.configure = services => {
   let database = services.get("database");
   let events = services.get("event.manager");
   let Event = database.model("event");
+  let Result = database.model("result", ResultSchema);
   let season = (new Date).getFullYear();
 
   commands.add("points", () => {
