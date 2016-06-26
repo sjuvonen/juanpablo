@@ -152,9 +152,11 @@ class PointsCalculator {
   scores(bet) {
     let points = [...bet.bets].reduce((value, driver, i) => {
       if (driver.code == this.results[i].code) {
-        return driver.points = value + this.scoring[i];
+        driver.points = this.scoring[i];
+        return value + driver.points;
       } else if (this.driverOnPodium(driver)) {
-        return driver.points = value + this.scoring[3];
+        driver.points = this.scoring[3];
+        return value + driver.points;
       } else {
         driver.points = 0;
       }
