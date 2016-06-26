@@ -112,16 +112,16 @@ exports.configure = services => {
         let wid = util.format("%d:%d", race.season, race.round);
         if (!watchers.has(wid)) {
           let watcher = new ErgastWatcher(race.season, race.round);
+          watchers.set(wid, watcher);
           watcher.watch()
             .then(result => Result.update({season: result.season, round: result.round}, result, {upsert: true}))
             .then(() => events.emit("raceresults.result", {season: race.season, round: race.round}))
-            .then(() => watchers.remove(wid))
+            .then(() => watchers.delete(wid))
             .then(() => console.log("Updated result for round", race.round))
             .catch(error => {
               console.log("Updating results failed", error.stack);
             });
 
-          watchers.set(wid, watcher);
         }
       }));
   };

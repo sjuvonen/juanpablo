@@ -10,11 +10,13 @@ let BetSchema = new mongoose.Schema({
   season: Number,
   round: Number,
   points: Number,
+  maximum: Boolean,
   bets: [{
     _id: false,
     firstName: String,
     lastName: String,
-    code: String
+    code: String,
+    points: Number,
   }],
   created: {
     type: Date,
@@ -142,17 +144,19 @@ class PointsCalculator {
 
   process(bet) {
     return new Promise((resolve, reject) => {
-      bet.points = this.scores(...bet.bets);
+      bet.points = this.scores(bet);
       resolve(bet);
     });
   }
 
-  scores(d1, d2, d3) {
-    let points = [d1, d2, d3].reduce((value, driver, i) => {
+  scores(bet) {
+    let points = [...bet.bets].reduce((value, driver, i) => {
       if (driver.code == this.results[i].code) {
-        return value + this.scoring[i];
+        return driver.points = value + this.scoring[i];
       } else if (this.driverOnPodium(driver)) {
-        return value + this.scoring[3];
+        return driver.points = value + this.scoring[3];
+      } else {
+        driver.points = 0;
       }
       return value;
     }, 0);
@@ -160,7 +164,10 @@ class PointsCalculator {
     let max = this.scoring.slice(0, 3).reduce((sum, x) => sum + x, 0);
 
     if (points == max) {
+      bet.maximum = true;
       points += this.bonus;
+    } else {
+      bet.maximum = false;
     }
 
     return points;
