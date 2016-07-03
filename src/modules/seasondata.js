@@ -4,22 +4,34 @@ let htmlparser = require("htmlparser2");
 let mongoose = require("mongoose");
 let net = require("../net");
 let util = require("util");
+let Config = require("colibre/src/util/config").Config;
+let Command = require("./commands");
 
 let DefaultPoints = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 
 let SeasonSchema = new mongoose.Schema({
   _id: Number,
-  // drivers: [{
-  //   number: Number,
-  //   name: String,
-  // }],
+
+  /**
+   * Drivers participating in this season.
+   */
   drivers: [{
+    _id: false,
     firstName: String,
     lastName: String,
     code: String,
     number: Number,
-    _id: false,
   }],
+
+  teams: [{
+    _id: false,
+    name: String,
+    code: String,
+  }],
+
+  /**
+   * Points system used during the season.
+   */
   points: {
     type: [Number],
     default: DefaultPoints
@@ -59,45 +71,77 @@ SeasonSchema.statics.driversForNames = function(rawnames, year) {
     });
 };
 
-let Season = mongoose.model("season", SeasonSchema);
-
-class ErgastParser {
+class ErgastDriverParser {
   parse(json) {
     let data = JSON.parse(json).MRData.DriverTable;
     return {
       year: parseInt(data.season),
-      drivers: data.Drivers.map(d => ({
-        number: parseInt(d.permanentNumber),
-        firstName: d.givenName,
-        lastName: d.familyName,
-        code: d.code,
+      drivers: data.Drivers.map(raw => ({
+        number: parseInt(raw.permanentNumber),
+        firstName: raw.givenName,
+        lastName: raw.familyName,
+        code: raw.code,
       })),
+    };
+  }
+}
+
+class ErgastTeamParser {
+  parse(json) {
+    let data = JSON.parse(json).MRData.ConstructorTable;
+    return {
+      year: parseInt(data.season),
+      teams: data.Constructors.map(raw => ({
+        name: raw.name,
+        code: raw.constructorId,
+      })),
+    };
+  }
+}
+
+class ErgastDownloader {
+  constructor(config) {
+    this.config = config;
+    console.log(this.config);
+  }
+
+  download(year) {
+    let p1 = net.download(this.url("drivers", year)).then(response => {
+      return (new ErgastDriverParser).parse(response.data);
+    });
+
+    let p2 = net.download(this.url("constructors", year)).then(response => {
+      return (new ErgastTeamParser).parse(response.data);
+    });
+
+    return Promise.all([p1, p2]).then(([doc1, doc2]) => {
+      doc1.teams = doc2.teams;
+      return doc1;
+    });
+  }
+
+  url(resource, year) {
+    if (!year) {
+      year = (new Date).getFullyear();
     }
+    return util.format("%s/%d/%s.json", this.config.get("ergast.url"), year, resource);
   }
 }
 
 exports.configure = services => {
-  function updateSeasonData(year) {
-    if (!year) {
-      year = (new Date).getFullYear();
-    }
+  let database = services.get("database");
+  let Season = database.model("season", SeasonSchema);
 
-    let url = services.get("config").get("modules.seasondata.source.ergast");
-    let source = util.format(url, year);
+  services.registerFactory("seasondata.downloader", () => {
+    let config = services.get("config").get("modules.seasondata");
+    return new ErgastDownloader(new Config(config));
+  });
 
-    return net.download(source).then(result => {
-      let season = (new ErgastParser).parse(result.data);
-      return Season.update({_id: season.year}, season, {upsert: true});
+  services.get("command.manager").add("rs", Command.ALLOW_WHITELIST, command => {
+    let downloader = services.get("seasondata.downloader");
+    return downloader.download(command.params[0]).then(data => {
+      let season = new Season(data);
+      return Season.update({_id: season.year}, season.toObject(), {upsert: true});
     });
-  }
-
-  services.get("database").model("season").findCurrent().then(season => {
-    if (!season) {
-      updateSeasonData().catch(error => console.error("seasondata.update", error.stack));
-    }
-  }).catch(error => console.error(error.stack));
-
-  services.get("command.manager").add("reloadSeason", () => {
-    return updateSeasonData().then(() => "OK");
   });
 };
