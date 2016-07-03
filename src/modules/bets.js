@@ -185,7 +185,6 @@ exports.configure = services => {
   let commands = services.get("command.manager");
   let events = services.get("event.manager");
   let Bet = database.model("bet", BetSchema);
-  let Result = database.model("result");
   let Event = database.model("event");
 
   commands.add("bet", command => {
@@ -238,9 +237,9 @@ exports.configure = services => {
     }
   });
 
-  events.on("raceresults.result", event => {
+  events.on("racecalendar.result", event => {
     let query = {season: event.season, round: event.round};
-    Promise.all([Result.findOne(query), Bet.find(query)])
+    Promise.all([Event.findOne(query), Bet.find(query)])
       .then(([result, bets]) => Promise.all(bets.map(bet => (new PointsCalculator(result.results)).process(bet))))
       .then(bets => Promise.all(bets.map(bet => bet.save())))
       .then(() => console.log("Updated scores for round", event.round));

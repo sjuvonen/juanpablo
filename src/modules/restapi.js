@@ -4,7 +4,7 @@ exports.configure = services => {
   let router = services.get("rest.router");
   let database = services.get("database");
   let Bet = database.model("bet");
-  let Result = database.model("result");
+  let Event = database.model("event");
 
   router.route("/rest/bets/:season", event => {
     return Bet
@@ -19,10 +19,10 @@ exports.configure = services => {
   });
 
   router.route("/rest/results/:season", event => {
-    return Result.find({season: event.params.season}).sort({round: 1});
+    return Event.find({season: event.params.season, type: "race"}).sort({round: 1});
   });
 
   router.route("/rest/results/:season/:round", event => {
-    return Result.find({season: event.params.season, round: event.params.round});
+    return Event.find({season: event.params.season, round: event.params.round, type: "race"});
   });
 };

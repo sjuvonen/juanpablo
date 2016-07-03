@@ -14,7 +14,14 @@ let EventSchema = new mongoose.Schema({
     type: String,
     enum: ["practise", "qualifying", "race", "test"]
   },
-  results: [String]
+  results: [{
+    _id: false,
+    code: String,
+    firstName: String,
+    lastName: String,
+    number: Number,
+    points: Number,
+  }],
 });
 
 EventSchema.statics.findPrevious = function(event_type) {

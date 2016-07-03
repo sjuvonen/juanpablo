@@ -10,59 +10,19 @@ class NoResultsError extends Error {
   }
 }
 
-let ResultSchema = new mongoose.Schema({
-  season: Number,
-  round: Number,
-  date: Date,
-  results: [{
-    _id: false,
-    number: Number,
-    round: Number,
-    code: String,
-    firstName: String,
-    lastName: String,
-    points: Number,
-  }],
-});
-
-ResultSchema.statics.latestResult = function() {
-  return this.findOne().sort({season: -1, round: -1});
-};
-
-ResultSchema.statics.driverStandings = function() {
-  return this.latestResult()
-    .then(last => last || {})
-    .then(last => this.find({season: last.season}))
-    .then(races => races.reduce((standings, race) => {
-      race.results.forEach(item => {
-        let name = util.format("%s %s", item.firstName, item.lastName);
-        let points = (standings.get(name) || 0) + item.points;
-        standings.set(name, points);
-      });
-      return standings;
-    }, new Map))
-  .then(standings => [...standings.entries()].sort((a, b) => b[1] - a[1]))
-  .then(entries => entries.length ? entries : Promise.reject(new Error("No points data found.")));
-};
-
 class ErgastParser {
   parse(json) {
     let data = JSON.parse(json).MRData.RaceTable.Races[0];
     if (!data) {
       throw new NoResultsError;
     }
-    return {
-      season: parseInt(data.season),
-      round: parseInt(data.round),
-      date: new Date(util.format("%sT%s", data.date, data.time)),
-      results: data.Results.map(item => ({
-        number: parseInt(item.number),
-        points: parseInt(item.points),
-        code: item.Driver.code,
-        firstName: item.Driver.givenName,
-        lastName: item.Driver.familyName,
-      })),
-    };
+    return data.Results.map(item => ({
+      code: item.Driver.code,
+      firstName: item.Driver.givenName,
+      lastName: item.Driver.familyName,
+      number: parseInt(item.number),
+      points: parseInt(item.points),
+    }));
   }
 }
 
@@ -88,8 +48,8 @@ class ErgastWatcher {
 
   fetch() {
     return net.download(this.url).then(response => {
-      let result = (new ErgastParser).parse(response.data);
-      return result.results.length ? result : Promise.reject(new Error("Got invalid data"));
+      let results = (new ErgastParser).parse(response.data);
+      return results.length ? results : Promise.reject(new Error("Got invalid data"));
     });
   }
 }
@@ -99,7 +59,6 @@ exports.configure = services => {
   let database = services.get("database");
   let events = services.get("event.manager");
   let Event = database.model("event");
-  let Result = database.model("result", ResultSchema);
 
   commands.add("points", () => {
     return Result.driverStandings()
@@ -112,14 +71,8 @@ exports.configure = services => {
   let watchResults = () => {
     let season = (new Date).getFullYear();
 
-    Result.find({season: season}).sort("-round")
-      .then(results => results.map(r => r.round))
-      .then(rounds => Event.find({
-        season: season,
-        type: "race",
-        end: {$lt: new Date},
-        round: {$not: {$in: rounds}}
-      }))
+    Event.find({season: season, type: "race", end: {$lt: new Date}, results: {$size: 0}})
+      .sort("-round")
       .then(races => races.map(race => {
         console.log("Wait for results", race.season, race.round);
         let wid = util.format("%d:%d", race.season, race.round);
@@ -127,16 +80,18 @@ exports.configure = services => {
           let watcher = new ErgastWatcher(race.season, race.round);
           watchers.set(wid, watcher);
           watcher.watch()
-            .then(result => Result.update({season: result.season, round: result.round}, result, {upsert: true}))
-            .then(() => events.emit("raceresults.result", {season: race.season, round: race.round}))
+            .then(results => Event.update({season: race.season, round: race.round, type: "race"}, {results: results}))
             .then(() => watchers.delete(wid))
+            .then(() => events.emit("racecalendar.result", {season: race.season, round: race.round}))
             .then(() => console.log("Updated result for round", race.round))
             .catch(error => {
-              console.log("Updating results failed", error.stack);
+              console.log(util.format("Updating results %d/%d failed:", race.round, race.season), error.stack);
             });
 
         }
-      }));
+      })).catch(error => {
+        console.log("raceresults.watch:", error.stack);
+      });
   };
 
   watchResults();

@@ -4,7 +4,6 @@ let htmlparser = require("htmlparser2");
 let mongoose = require("mongoose");
 let net = require("../net");
 let util = require("util");
-let Config = require("colibre/src/util/config").Config;
 let Command = require("./commands");
 
 let DefaultPoints = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
@@ -133,8 +132,7 @@ exports.configure = services => {
   let Season = database.model("season", SeasonSchema);
 
   services.registerFactory("seasondata.downloader", () => {
-    let config = services.get("config").get("modules.seasondata");
-    return new ErgastDownloader(new Config(config));
+    return new ErgastDownloader(services.get("config"));
   });
 
   services.get("command.manager").add("rs", Command.ALLOW_WHITELIST, command => {
