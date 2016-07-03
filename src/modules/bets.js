@@ -186,6 +186,7 @@ exports.configure = services => {
   let events = services.get("event.manager");
   let Bet = database.model("bet", BetSchema);
   let Event = database.model("event");
+  let connection = services.get("connection");
 
   commands.add("bet", command => {
     let names = command.params;
