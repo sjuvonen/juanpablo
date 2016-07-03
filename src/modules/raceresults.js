@@ -22,6 +22,7 @@ class ErgastParser {
       lastName: item.Driver.familyName,
       number: parseInt(item.number),
       points: parseInt(item.points),
+      team: item.Constructor.constructorId,
     }));
   }
 }
@@ -61,9 +62,12 @@ exports.configure = services => {
   let Event = database.model("event");
 
   commands.add("points", () => {
-    return Result.driverStandings()
-      .then(standings => standings.slice(0, 10).map((row, i) => util.format("%d. %s (%d)", i+1, row[0], row[1])))
-      .then(standings => standings.join(" "));
+    return Event.standings().then(standings => {
+      let drivers = standings.drivers.slice(0, 10).map((row, i) => util.format("%d. %s (%d)", i+1, row[0], row[1]));
+      let teams = standings.teams.map((row, i) => util.format("%d. %s (%d)", i+1, row[0], row[1]));
+      let after = util.format("Standings after %s", standings.last.name);
+      return [after, drivers.join(" "), teams.join(" ")];
+    });
   });
 
   let watchers = new Map;

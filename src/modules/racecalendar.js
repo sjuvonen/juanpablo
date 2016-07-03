@@ -21,6 +21,7 @@ let EventSchema = new mongoose.Schema({
     lastName: String,
     number: Number,
     points: Number,
+    team: String,
   }],
 });
 
@@ -50,6 +51,53 @@ EventSchema.statics.findNext = function(event_type) {
 
 EventSchema.statics.findNextRace = function() {
   return this.findNext(Event.RACE);
+};
+
+EventSchema.statics.latestResult = function() {
+  return this.findOne({results: {$ne: []}}).sort({season: -1, round: -1});
+};
+
+EventSchema.statics.standings = function() {
+  let Season = this.db.model("season");
+  return this.find({type: "race", results: {$ne: []}}).sort({season: -1, round: -1}).limit(30)
+    .then(races => {
+      let standings = {
+        last: null,
+        drivers: null,
+        teams: null,
+      };
+      let drivers = new Map;
+      let teams = new Map;
+
+      races.forEach((race, i) => {
+        if (i == 0) {
+          standings.last = race;
+        }
+        race.results.forEach(item => {
+          let driver = util.format("%s %s", item.firstName, item.lastName);
+          let d_points = (drivers.get(driver) || 0) + item.points;
+          drivers.set(driver, d_points);
+
+          let t_points = (teams.get(item.team) || 0) + item.points;
+          teams.set(item.team, t_points);
+        });
+      });
+
+      standings.drivers = [...drivers.entries()].sort((a, b) => b[1] - a[1]);
+      standings.teams = [...teams.entries()].sort((a, b) => b[1] - a[1]);
+
+      return standings;
+    })
+    .then(standings => standings.drivers.length ? standings : Promise.reject(new Error("No points data found.")))
+    .then(standings => {
+      return Season.findOne({_id: standings.last.season}).then(season => {
+        let teams = new Map(season.teams.map(t => [t.code, t.name]));
+        standings.teams.forEach(row => {
+          row[0] = teams.get(row[0]) || row[0];
+        });
+        return standings;
+      });
+    });
 };
 
 let Event = mongoose.model("event", EventSchema);
