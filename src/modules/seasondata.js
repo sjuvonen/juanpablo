@@ -121,7 +121,7 @@ class ErgastDownloader {
 
   url(resource, year) {
     if (!year) {
-      year = (new Date).getFullyear();
+      year = (new Date).getFullYear();
     }
     return util.format("%s/%d/%s.json", this.config.get("ergast.url"), year, resource);
   }
