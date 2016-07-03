@@ -19,7 +19,7 @@ exports.configure = services => {
   });
 
   router.route("/rest/results/:season", event => {
-    return Event.find({season: event.params.season, type: "race"}).sort({round: 1});
+    return Event.find({season: event.params.season, type: "race", results: {$ne: []}}).sort({round: 1});
   });
 
   router.route("/rest/results/:season/:round", event => {
