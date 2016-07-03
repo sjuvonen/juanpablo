@@ -138,7 +138,10 @@ exports.configure = services => {
     let downloader = services.get("seasondata.downloader");
     return downloader.download(command.params[0]).then(data => {
       let season = new Season(data);
-      return Season.update({_id: season.year}, season.toObject(), {upsert: true}).then(() => "OK");
+      return Season.update({_id: season.year}, season.toObject(), {upsert: true}).then(
+        () => "OK",
+        error => new Error("Failed to reload season")
+      );
     });
   });
 };
