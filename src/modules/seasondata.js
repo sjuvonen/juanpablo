@@ -101,7 +101,6 @@ class ErgastTeamParser {
 class ErgastDownloader {
   constructor(config) {
     this.config = config;
-    console.log(this.config);
   }
 
   download(year) {
