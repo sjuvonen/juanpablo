@@ -4,6 +4,12 @@ let mongoose = require("mongoose");
 let net = require("../net");
 let util = require("util");
 
+class NoResultsError extends Error {
+  constructor() {
+    super("No results");
+  }
+}
+
 let ResultSchema = new mongoose.Schema({
   season: Number,
   round: Number,
@@ -42,6 +48,9 @@ ResultSchema.statics.driverStandings = function() {
 class ErgastParser {
   parse(json) {
     let data = JSON.parse(json).MRData.RaceTable.Races[0];
+    if (!data) {
+      throw new NoResultsError;
+    }
     return {
       season: parseInt(data.season),
       round: parseInt(data.round),
@@ -68,8 +77,10 @@ class ErgastWatcher {
   watch() {
     return new Promise((resolve, reject) => {
       this.fetch().then(resolve, error => {
-        console.error(error.stack);
-        console.log("retry results", this.season, this.round);
+        if (!(error instanceof NoResultsError)) {
+          console.error(error.stack);
+          console.log("retry results", this.season, this.round);
+        }
         setTimeout(() => this.watch(), this.interval);
       });
     });
@@ -89,7 +100,6 @@ exports.configure = services => {
   let events = services.get("event.manager");
   let Event = database.model("event");
   let Result = database.model("result", ResultSchema);
-  let season = (new Date).getFullYear();
 
   commands.add("points", () => {
     return Result.driverStandings()
@@ -100,6 +110,8 @@ exports.configure = services => {
   let watchers = new Map;
 
   let watchResults = () => {
+    let season = (new Date).getFullYear();
+
     Result.find({season: season}).sort("-round")
       .then(results => results.map(r => r.round))
       .then(rounds => Event.find({
@@ -109,6 +121,7 @@ exports.configure = services => {
         round: {$not: {$in: rounds}}
       }))
       .then(races => races.map(race => {
+        console.log("Wait for results", race.season, race.round);
         let wid = util.format("%d:%d", race.season, race.round);
         if (!watchers.has(wid)) {
           let watcher = new ErgastWatcher(race.season, race.round);
