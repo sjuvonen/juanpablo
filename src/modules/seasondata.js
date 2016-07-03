@@ -122,7 +122,7 @@ class ErgastDownloader {
     if (!year) {
       year = (new Date).getFullYear();
     }
-    return util.format("%s/%d/%s.json", this.config.get("ergast.url"), year, resource);
+    return util.format("%s/%d/%s.json", this.config.get("modules.shared.ergast.url"), year, resource);
   }
 }
 
@@ -138,7 +138,7 @@ exports.configure = services => {
     let downloader = services.get("seasondata.downloader");
     return downloader.download(command.params[0]).then(data => {
       let season = new Season(data);
-      return Season.update({_id: season.year}, season.toObject(), {upsert: true});
+      return Season.update({_id: season.year}, season.toObject(), {upsert: true}).then(() => "OK");
     });
   });
 };
