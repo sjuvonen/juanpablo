@@ -67,8 +67,8 @@ EventSchema.statics.findPendingRace = function() {
     ]
   };
 
-  return this.findOne(query).then(event => {
-    return event || Promise.reject(new Error("There are no races waiting for results"));
+  return this.findOne(query).then(race => {
+    return race || Promise.reject(new Error("There are no races waiting for results"));
   });
 };
 

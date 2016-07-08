@@ -79,20 +79,6 @@ exports.configure = services => {
 
     } catch (error) {
       // pass
-      console.error("topicresults.ontopic:", error.stack);
-      console.log("T", event.topic);
     }
   });
-
-  // let topic =
-  //   "1. Rosberg 2. Vettel 3. Hamilton 4. Räikkönen 5. Perez " +
-  //   "6. Hülkenberg 7. Bottas 8. Massa 9. Alonso 10. Button";
-  //
-  // let resolver = new DriverResolver(Season);
-  // let names = TopicParser.parse(topic);
-  // resolver.resolve(names).then(drivers => {
-  //   console.log(drivers);
-  // }, error => {
-  //   console.error(error.stack);
-  // });
 };
