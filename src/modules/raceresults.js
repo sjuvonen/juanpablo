@@ -61,6 +61,8 @@ exports.configure = services => {
   let events = services.get("event.manager");
   let Event = database.model("event");
 
+  Event.on("results", race => events.emit("racecalendar.results", {event: race}));
+
   commands.add("points", () => {
     return Event.standings().then(standings => {
       let drivers = standings.drivers.slice(0, 10).map((row, i) => util.format("%d. %s (%d)", i+1, row[0], row[1]));
@@ -73,9 +75,17 @@ exports.configure = services => {
   let watchers = new Map;
 
   let watchResults = () => {
-    let season = (new Date).getFullYear();
+    let query = {
+      season: (new Date).getFullYear(),
+      type: "race",
+      end: {$lt: new Date},
+      $or: [
+        {results: {$size: 0}},
+        {resultsAreUnofficial: true},
+      ]
+    };
 
-    Event.find({season: season, type: "race", end: {$lt: new Date}, results: {$size: 0}})
+    Event.find(query)
       .sort("-round")
       .then(races => races.map(race => {
         console.log("Wait for results", race.season, race.round);
@@ -84,9 +94,9 @@ exports.configure = services => {
           let watcher = new ErgastWatcher(race.season, race.round);
           watchers.set(wid, watcher);
           watcher.watch()
-            .then(results => Event.update({season: race.season, round: race.round, type: "race"}, {results: results}))
+            .then(results => Event.updateResults({season: race.season, round: race.round, type: "race"}, results))
             .then(() => watchers.delete(wid))
-            .then(() => events.emit("racecalendar.result", {season: race.season, round: race.round}))
+            // .then(() => events.emit("racecalendar.result", {season: race.season, round: race.round}))
             .then(() => console.log("Updated result for round", race.round))
             .catch(error => {
               console.log(util.format("Updating results %d/%d failed:", race.round, race.season), error.stack);

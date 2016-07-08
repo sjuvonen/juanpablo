@@ -14,6 +14,7 @@ let EventSchema = new mongoose.Schema({
     type: String,
     enum: ["practise", "qualifying", "race", "test"]
   },
+  resultsAreUnofficial: Boolean,
   results: [{
     _id: false,
     code: String,
@@ -51,6 +52,24 @@ EventSchema.statics.findNext = function(event_type) {
 
 EventSchema.statics.findNextRace = function() {
   return this.findNext(Event.RACE);
+};
+
+EventSchema.statics.findPendingRace = function() {
+  let time_limit = moment().subtract(30, "minutes").toDate();
+
+  let query = {
+    type: "race",
+    start: {$lt: time_limit},
+    end: {$gt: time_limit},
+    $or: [
+      {results: {$size: 0}},
+      {resultsAreUnofficial: true},
+    ]
+  };
+
+  return this.findOne(query).then(event => {
+    return event || Promise.reject(new Error("There are no races waiting for results"));
+  });
 };
 
 EventSchema.statics.latestResult = function() {
@@ -98,6 +117,17 @@ EventSchema.statics.standings = function() {
         return standings;
       });
     });
+};
+
+EventSchema.methods.updateResults = function(results, final) {
+  this.results = results;
+  this.resultsAreUnofficial = !final;
+
+  this.save().then(() => this.constructor.emit("results", this));
+};
+
+EventSchema.statics.updateResults = function(params, results, final) {
+  this.findOne(params).then(event => event.updateResults(results, final));
 };
 
 let Event = mongoose.model("event", EventSchema);

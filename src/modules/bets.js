@@ -60,6 +60,12 @@ BetSchema.statics.userBets = function(nick, round) {
 
 BetSchema.statics.setUserBets = function(account, round, names) {
   return this.db.model("season").driversForNames(names).then(drivers => {
+    drivers.forEach(driver => {
+      if (drivers.indexOf(driver) < i) {
+        throw new Error(util.format("Duplicate driver '%s'", driver.code));
+      }
+    });
+    
     let query = {
       account: account.account,
       season: (new Date).getFullYear(),
@@ -238,11 +244,13 @@ exports.configure = services => {
     }
   });
 
-  events.on("racecalendar.result", event => {
-    let query = {season: event.season, round: event.round};
-    Promise.all([Event.findOne(query), Bet.find(query)])
-      .then(([result, bets]) => Promise.all(bets.map(bet => (new PointsCalculator(result.results)).process(bet))))
+  events.on("racecalendar.results", event => {
+    let query = {season: event.event.season, round: event.event.round};
+    let results = event.event.results;
+
+    Bet.find(query)
+      .then(bets => Promise.all(bets.map(bet => (new PointsCalculator(results)).process(bet))))
       .then(bets => Promise.all(bets.map(bet => bet.save())))
-      .then(() => console.log("Updated scores for round", event.round));
+      .then(() => console.log("Updated scores for round", event.event.round));
   });
 };
