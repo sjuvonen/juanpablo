@@ -251,6 +251,20 @@ exports.configure = services => {
     Bet.find(query)
       .then(bets => Promise.all(bets.map(bet => (new PointsCalculator(results)).process(bet))))
       .then(bets => Promise.all(bets.map(bet => bet.save())))
+      .then(bets => {
+        if (bets.length) {
+          let winners = [bets[0]];
+          bets.slice(1).forEach(bet => {
+            if (bet.points > winners[0].points) {
+              winners = [bet];
+            } else if (bet.points == winners[0].points) {
+              winners.push(bet);
+            }
+          });
+          connection.amsg(util.format("Dudes! Bet scores are updated for the %s", event.event.name));
+          connection.amsg(util.format("The highest score in this round was %d by %s", winners[0].points, winners.join(", ")));
+        }
+      })
       .then(() => console.log("Updated scores for round", event.event.round));
   });
 };
