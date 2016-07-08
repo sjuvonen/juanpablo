@@ -60,12 +60,12 @@ BetSchema.statics.userBets = function(nick, round) {
 
 BetSchema.statics.setUserBets = function(account, round, names) {
   return this.db.model("season").driversForNames(names).then(drivers => {
-    drivers.forEach(driver => {
+    drivers.forEach((driver, i) => {
       if (drivers.indexOf(driver) < i) {
         throw new Error(util.format("Duplicate driver '%s'", driver.code));
       }
     });
-    
+
     let query = {
       account: account.account,
       season: (new Date).getFullYear(),

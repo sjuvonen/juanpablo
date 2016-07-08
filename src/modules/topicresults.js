@@ -22,7 +22,7 @@ class DriverResolver {
       throw new Error(util.format("Name '%s' not found in the of drivers", name));
     });
 
-    drivers.forEach(driver => {
+    drivers.forEach((driver, i) => {
       if (drivers.indexOf(driver) < i) {
         throw new Error(util.format("Duplicate driver '%s'", driver.code));
       }
