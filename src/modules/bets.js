@@ -185,6 +185,7 @@ class PointsCalculator {
     return this.results.slice(0, 3).map(d => d.code).indexOf(driver.code) != -1;
   }
 }
+
 exports.configure = services => {
   let database = services.get("database");
   let whois = services.get("whois");

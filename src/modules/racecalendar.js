@@ -235,7 +235,7 @@ exports.configure = services => {
   services.get("command.manager").add("next", () => {
     let now = {start: {$lt: new Date}, end: {$gt: new Date}};
 
-    return Promise.all(Event.findOne(now), Event.findNext()).then([current, next] => {
+    return Promise.all(Event.findOne(now), Event.findNext()).then(([current, next]) => {
       if (!current && !next) {
         throw new Error("No event data found");
       }
