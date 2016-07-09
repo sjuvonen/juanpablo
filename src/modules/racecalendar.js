@@ -176,6 +176,51 @@ class IcsParser {
   }
 }
 
+function timeToEvent(event) {
+  let date = moment.utc(event.start);
+  let diff = moment.duration(date.diff());
+  let timestamp = date.format("MMMM D, HH:mm UTC");
+  let display = [event.name + ": ", timestamp];
+
+  if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
+    display.push(" (in");
+
+    if (diff.months() == 1) {
+      display.push(" 1 month");
+    } else if (diff.months() > 1) {
+      display.push(util.format(" %d months", diff.months()));
+    }
+
+    if (diff.weeks() == 1) {
+      display.push(" 1 week");
+    } else if (diff.months() > 1) {
+      display.push(util.format(" %d weeks", diff.months()));
+    }
+
+    if (diff.days() == 1) {
+      display.push(" 1 day");
+    } else if (diff.days() > 1) {
+      display.push(util.format(" %d days", diff.days() % 7));
+    }
+
+    if (diff.hours() == 1) {
+      display.push(" 1 hour");
+    } else if (diff.hours() > 1) {
+      display.push(util.format(" %d hours", diff.hours()));
+    }
+
+    if (diff.minutes() == 1) {
+      display.push(" 1 minute");
+    } else if (diff.minutes() > 1) {
+      display.push(util.format(" %d minutes", diff.minutes()));
+    }
+
+    display.push(")");
+  }
+
+  return display.join(" ");
+}
+
 exports.configure = services => {
   // Import calendar from file if current season has no events.
   services.get("database").model("event").where({season: (new Date).getFullYear()}).count().then(count => {
@@ -188,49 +233,24 @@ exports.configure = services => {
   });
 
   services.get("command.manager").add("next", () => {
-    return Event.findNext().then(event => {
-      let date = moment.utc(event.start);
-      let diff = moment.duration(date.diff());
-      let timestamp = date.format("MMMM D, HH:mm UTC");
-      let display = [event.name + ": ", timestamp];
+    let now = {start: {$lt: new Date}, end: {$gt: new Date}};
 
-      if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
-        display.push(" (in");
-
-        if (diff.months() == 1) {
-          display.push(" 1 month");
-        } else if (diff.months() > 1) {
-          display.push(util.format(" %d months", diff.months()));
-        }
-
-        if (diff.weeks() == 1) {
-          display.push(" 1 week");
-        } else if (diff.months() > 1) {
-          display.push(util.format(" %d weeks", diff.months()));
-        }
-
-        if (diff.days() == 1) {
-          display.push(" 1 day");
-        } else if (diff.days() > 1) {
-          display.push(util.format(" %d days", diff.days() % 7));
-        }
-
-        if (diff.hours() == 1) {
-          display.push(" 1 hour");
-        } else if (diff.hours() > 1) {
-          display.push(util.format(" %d hours", diff.hours()));
-        }
-
-        if (diff.minutes() == 1) {
-          display.push(" 1 minute");
-        } else if (diff.minutes() > 1) {
-          display.push(util.format(" %d minutes", diff.minutes()));
-        }
-
-        display.push(")");
+    return Promise.all(Event.findOne(now), Event.findNext()).then([current, next] => {
+      if (!current && !next) {
+        throw new Error("No event data found");
       }
 
-      return display.join("");
+      let message = [];
+
+      if (current) {
+        message.push(timeToEvent(current));
+      }
+
+      if (next) {
+        message.push(timeToEvent(next));
+      }
+
+      return message;
     });
   });
 };
