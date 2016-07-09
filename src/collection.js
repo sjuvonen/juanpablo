@@ -26,6 +26,9 @@ exports.mapWait = (items, callback) => {
  * Utility class for storing values that expire (are removed) automaticly after defined threshold time.
  */
 class AgingCache {
+  /**
+   * @param expire {number} Life time for entries in milliseconds.
+   */
   constructor(expire) {
     this.expire = expire || Number.MAX_SAFE_INTEGER;
     this.cache = new Map;
