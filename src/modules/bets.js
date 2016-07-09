@@ -193,6 +193,21 @@ exports.configure = services => {
   let Bet = database.model("bet", BetSchema);
   let Event = database.model("event");
   let connection = services.get("connection");
+  let notifier = services.get("racecalendar.notifications");
+
+  notifier.on("qualifying", event => {
+    Bet.find({season: event.season, round: event.round}).then(bets => {
+      connection.amsg(util.format("Qualifying is starting so bet window is now closed. We got %d bets placed for this round!", bets.length));
+    });
+  });
+
+  notifier.on("qualifying", -30, () => {
+    connection.amsg("Qualifying starts in 30 minutes! Time for placing bets is NOW!");
+  });
+
+  notifier.on("qualifying", -120, () => {
+    connection.amsg("Only two hours until the start of qualifying! Remember to check your bets for this round!");
+  });
 
   commands.add("bet", command => {
     let names = command.params;
