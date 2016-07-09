@@ -1,5 +1,6 @@
 "use strict";
 
+let moment = require("moment");
 let mongoose = require("mongoose");
 let net = require("../net");
 let util = require("util");
@@ -78,7 +79,7 @@ exports.configure = services => {
     let query = {
       season: (new Date).getFullYear(),
       type: "race",
-      end: {$lt: new Date},
+      end: {$lt: moment().add(30, "minutes")},
       $or: [
         {results: {$size: 0}},
         {resultsAreUnofficial: true},
