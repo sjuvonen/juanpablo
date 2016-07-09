@@ -71,9 +71,6 @@ exports.configure = services => {
         Event.findPendingRace()
           .then(race => {
             race.updateResults(drivers, false);
-          })
-          .catch(error => {
-            console.error("topicresults.unofficial:", error.stack);
           });
       });
 
