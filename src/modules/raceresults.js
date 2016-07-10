@@ -38,6 +38,7 @@ class ErgastWatcher {
 
   watch() {
     return new Promise((resolve, reject) => {
+      console.log("Query for results", this.season, this.round);
       this.fetch().then(resolve, error => {
         if (!(error instanceof NoResultsError)) {
           console.error(error.stack);
@@ -62,6 +63,8 @@ exports.configure = services => {
   let events = services.get("event.manager");
   let Event = database.model("event");
 
+  services.registerFactory("raceresults.watchers", () => new Map);
+
   Event.on("results", race => events.emit("racecalendar.results", {event: race}));
 
   commands.add("points", () => {
@@ -72,8 +75,6 @@ exports.configure = services => {
       return [after, drivers.join(" "), teams.join(" ")];
     });
   });
-
-  let watchers = new Map;
 
   let watchResults = () => {
     let query = {
@@ -89,7 +90,7 @@ exports.configure = services => {
     Event.find(query)
       .sort("-round")
       .then(races => races.map(race => {
-        console.log("Wait for results", race.season, race.round);
+        let watchers = services.get("raceresults.watchers");
         let wid = util.format("%d:%d", race.season, race.round);
         if (!watchers.has(wid)) {
           let watcher = new ErgastWatcher(race.season, race.round);
