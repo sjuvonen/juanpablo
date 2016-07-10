@@ -68,10 +68,10 @@ exports.configure = services => {
         let resolver = new DriverResolver(season);
         let drivers = resolver.resolve(names);
 
-        Event.findPendingRace()
-          .then(race => {
-            race.updateResults(drivers, false);
-          });
+        Event.findPendingRace().then(race => {
+          season.points.forEach((pts, i) => (race.results[i].points = pts));
+          race.updateResults(drivers, false);
+        });
       });
 
     } catch (error) {
