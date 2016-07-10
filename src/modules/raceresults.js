@@ -95,9 +95,15 @@ exports.configure = services => {
           let watcher = new ErgastWatcher(race.season, race.round);
           watchers.set(wid, watcher);
           watcher.watch()
-            .then(results => Event.updateResults({season: race.season, round: race.round, type: "race"}, results))
+            .then(results => {
+              Event.updateResults({season: race.season, round: race.round, type: "race"}, results);
+
+              Season.findOne({_id: race.season}).then(season => {
+                season.drivers = results;
+                season.save();
+              });
+            })
             .then(() => watchers.delete(wid))
-            // .then(() => events.emit("racecalendar.result", {season: race.season, round: race.round}))
             .then(() => console.log("Updated result for round", race.round))
             .catch(error => {
               console.log(util.format("Updating results %d/%d failed:", race.round, race.season), error.stack);
@@ -107,6 +113,10 @@ exports.configure = services => {
       })).catch(error => {
         console.log("raceresults.watch:", error.stack);
       });
+  };
+
+  let updateResults = (event, results) => {
+
   };
 
   watchResults();

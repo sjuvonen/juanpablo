@@ -20,6 +20,7 @@ let SeasonSchema = new mongoose.Schema({
     lastName: String,
     code: String,
     number: Number,
+    team: String,
   }],
 
   teams: [{

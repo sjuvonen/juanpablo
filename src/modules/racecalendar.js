@@ -132,15 +132,19 @@ EventSchema.methods.updateResults = function(results, final) {
   this.resultsAreUnofficial = !final;
   this.results = results;
 
-  this.save().then(() => {
+  return this.save().then(() => {
     if (notify) {
       this.constructor.emit("results", this);
     }
+    return this;
   });
 };
 
+/**
+ * @param final {boolean} If set to false, results are considered unofficial until later updated again.
+ */
 EventSchema.statics.updateResults = function(params, results, final) {
-  this.findOne(params).then(event => event.updateResults(results, final));
+  return this.findOne(params).then(event => event.updateResults(results, final));
 };
 
 let Event = mongoose.model("event", EventSchema);
