@@ -11,7 +11,7 @@ class DriverResolver {
   resolve(names) {
     let cache = new Map(this.season.drivers.map(driver => {
       let regexp = this.toRegExp(driver.lastName);
-      return [regexp, driver];
+      return [regexp, driver.toObject()];
     }));
     let drivers = names.map(name => {
       for (let regexp of cache.keys()) {
@@ -66,10 +66,13 @@ exports.configure = services => {
       let names = TopicParser.parse(event.topic);
       Season.findOne({_id: (new Date).getFullYear()}).then(season => {
         let resolver = new DriverResolver(season);
-        let drivers = resolver.resolve(names);
+        let drivers = resolver.resolve(names)
+
+        season.points.forEach((points, i) => {
+          drivers[i].points = points;
+        });
 
         Event.findPendingRace().then(race => {
-          season.points.forEach((pts, i) => (drivers[i].points = pts));
           race.updateResults(drivers, false);
         });
       });
