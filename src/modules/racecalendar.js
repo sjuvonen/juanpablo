@@ -55,7 +55,7 @@ EventSchema.statics.findNextRace = function() {
 };
 
 EventSchema.statics.findPendingRace = function() {
-  let time_limit = moment().subtract(180, "minutes").toDate();
+  let time_limit = moment().subtract(30, "minutes").toDate();
 
   let query = {
     type: "race",
