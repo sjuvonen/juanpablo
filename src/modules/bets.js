@@ -269,9 +269,9 @@ exports.configure = services => {
       .then(bets => Promise.all(bets.map(bet => bet.save())))
       .then(bets => {
         if (bets.length) {
-          let winners = bets.sort((a, b) => b.points - a.points).filter((bet, i, temp) => {
-            return i == 0 || bet.points == temp[0].points;
-          });
+          let winners = bets.sort((a, b) => b.points - a.points)
+            .filter((bet, i, temp) => (i == 0 || bet.points == temp[0].points))
+            .map(bet => bet.nick);
           connection.amsg(util.format("Dudes! Bet scores are updated for the %s", event.event.name));
           connection.amsg(util.format("The highest score in this round was %d by %s", winners[0].points, winners.join(", ")));
         }
