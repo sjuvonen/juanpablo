@@ -243,11 +243,11 @@ exports.configure = services => {
       let message = [];
 
       if (current) {
-        message.push(timeToEvent(current));
+        message.push("NOW RUNNING: " + timeToEvent(current));
       }
 
       if (next) {
-        message.push(timeToEvent(next));
+        message.push("Next: " + timeToEvent(next));
       }
 
       return message;
