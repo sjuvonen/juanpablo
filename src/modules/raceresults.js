@@ -62,6 +62,7 @@ exports.configure = services => {
   let database = services.get("database");
   let events = services.get("event.manager");
   let Event = database.model("event");
+  let Season = database.model("season");
 
   services.registerFactory("raceresults.watchers", () => new Map);
 
