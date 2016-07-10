@@ -69,7 +69,7 @@ exports.configure = services => {
         let drivers = resolver.resolve(names);
 
         Event.findPendingRace().then(race => {
-          season.points.forEach((pts, i) => (race.results[i].points = pts));
+          season.points.forEach((pts, i) => (drivers[i].points = pts));
           race.updateResults(drivers, false);
         });
       });
