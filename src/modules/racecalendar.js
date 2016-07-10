@@ -120,10 +120,23 @@ EventSchema.statics.standings = function() {
 };
 
 EventSchema.methods.updateResults = function(results, final) {
-  this.results = results;
-  this.resultsAreUnofficial = !final;
+  let notify = (() => {
+    try {
+      let diff = this.results.filter((d, i) => (d.code != results[i].code));
+      return diff.length > 0;
+    } catch (error) {
+      return true;
+    }
+  })();
 
-  this.save().then(() => this.constructor.emit("results", this));
+  this.resultsAreUnofficial = !final;
+  this.results = results;
+
+  this.save().then(() => {
+    if (notify) {
+      this.constructor.emit("results", this);
+    }
+  });
 };
 
 EventSchema.statics.updateResults = function(params, results, final) {
