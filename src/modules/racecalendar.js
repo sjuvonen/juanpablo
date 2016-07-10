@@ -218,7 +218,7 @@ function timeToEvent(event) {
     display.push(")");
   }
 
-  return display.join(" ");
+  return display.join("");
 }
 
 exports.configure = services => {
