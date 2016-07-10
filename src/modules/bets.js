@@ -270,10 +270,11 @@ exports.configure = services => {
       .then(bets => {
         if (bets.length) {
           let winners = bets.sort((a, b) => b.points - a.points)
-            .filter((bet, i, temp) => (i == 0 || bet.points == temp[0].points))
-            .map(bet => bet.nick);
+            .filter((bet, i, temp) => (i == 0 || bet.points == temp[0].points));
+          let points = winners[0].points;
+          let nicks = winners.map(bet => bet.nick).join(", ");
           connection.amsg(util.format("Dudes! Bet scores are updated for the %s", event.event.name));
-          connection.amsg(util.format("The highest score in this round was %d by %s", winners[0].points, winners.join(", ")));
+          connection.amsg(util.format("The highest score in this round was %d by %s", winners[0].points, nicks));
         }
       })
       .then(() => console.log("Updated scores for round", event.event.round));
