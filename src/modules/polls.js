@@ -131,6 +131,10 @@ exports.configure = services => {
     let options = (config.get("o") || "yes,no").split(",");
     let poll = new Poll({question: question, options: options, user: {nick: command.nick}});
 
+    if (!question) {
+      throw new Error("No question given for poll");
+    }
+
     options.forEach(cmd => commands.add(cmd, command => manager.vote(command.nick, cmd)));
     command.send(util.format("NEW POLL: %s (%s)", poll.question, options.map(o => "!" + o).join(", ")));
 
