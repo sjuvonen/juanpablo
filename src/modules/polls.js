@@ -132,11 +132,11 @@ exports.configure = services => {
     let poll = new Poll({question: question, options: options, user: {nick: command.nick}});
 
     options.forEach(cmd => commands.add(cmd, command => manager.vote(command.nick, cmd)));
-    command.send(util.format("New poll: %s (%s)", poll.question, options.map(o => "!" + o).join(", ")));
+    command.send(util.format("NEW POLL: %s (%s)", poll.question, options.map(o => "!" + o).join(", ")));
 
     return manager.start(poll, config.get("t")).then(stats => {
       options.forEach(cmd => commands.delete(cmd));
-      return ["Poll finished!", poll.question + " " + stats.toString()];
+      return ["POLL FINISHED!", poll.question + " " + stats.toString()];
     });
   });
 };
