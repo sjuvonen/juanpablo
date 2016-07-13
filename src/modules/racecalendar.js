@@ -129,7 +129,7 @@ EventSchema.methods.updateResults = function(results, final) {
     }
   })();
 
-  this.resultsAreUnofficial = !final;
+  this.resultsAreUnofficial = (final === false);
   this.results = results;
 
   return this.save().then(() => {
