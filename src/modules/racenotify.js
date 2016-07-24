@@ -108,7 +108,7 @@ class EventNotifier {
     this.storage = storage;
     this.events = new events.EventManager;
     this.listeners = new Listeners;
-    this.interval = 1000 * 60 * 10;
+    this.interval = 1000 * 60 * 5;
     this.timer = null;
     this.start();
   }
@@ -132,7 +132,6 @@ class EventNotifier {
       throw new Error("EventNotifier is already running");
     }
     this.timer = setInterval(() => this.test, this.interval);
-    // this.test();
   }
 
   test() {

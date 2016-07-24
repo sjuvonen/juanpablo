@@ -117,10 +117,6 @@ exports.configure = services => {
       });
   };
 
-  let updateResults = (event, results) => {
-
-  };
-
   watchResults();
 
   setInterval(watchResults, 1000 * 60 * 10);

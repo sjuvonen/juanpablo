@@ -122,7 +122,7 @@ EventSchema.statics.standings = function() {
 EventSchema.methods.updateResults = function(results, final) {
   let notify = (() => {
     try {
-      let diff = this.results.filter((d, i) => (d.code != results[i].code));
+      let diff = results.filter((d, i) => (d.code != this.results[i].code));
       return diff.length > 0;
     } catch (error) {
       return true;

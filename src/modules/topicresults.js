@@ -72,9 +72,7 @@ exports.configure = services => {
           drivers[i].points = points;
         });
 
-        Event.findPendingRace().then(race => {
-          race.updateResults(drivers, false);
-        });
+        Event.findPendingRace().then(race => race.updateResults(drivers, false));
       });
 
     } catch (error) {
