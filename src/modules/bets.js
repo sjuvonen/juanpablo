@@ -230,7 +230,11 @@ exports.configure = services => {
         });
     }
   })
-  .validate(() => Bet.isBetWindowOpen())
+  .validate((nick, ...names) => {
+    if (names.length) {
+      return Bet.isBetWindowOpen()
+    }
+  })
   .validate((nick, ...names) => {
     if (names.length != 0 && names.length != 3) {
       return Promise.reject("Need three names to bet");
