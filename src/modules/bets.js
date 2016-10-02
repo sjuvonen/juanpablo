@@ -124,7 +124,7 @@ BetSchema.statics.pointsForSeason = function(season) {
     .then(event => new Promise((resolve, reject) => {
       let query = [
         {$match: {season: event.season, points: {$exists: true}}},
-        {$group: {_id: "$nick", points: {$sum: "$points"}, nick: {$first: "$nick"}}},
+        {$group: {_id: "$account", points: {$sum: "$points"}, nick: {$first: "$nick"}}},
         {$sort: {points: -1}}
       ];
       this.aggregate(query, (error, result) => {
