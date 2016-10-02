@@ -148,7 +148,9 @@ class EventNotifier {
       this.storage.findOne(query).sort("-start").then(event => {
         if (event) {
           let timeout = Math.abs(moment(event.start).add(time, "minutes").diff(new Date));
+          console.log("set notify for", event.name);
           setTimeout(() => {
+            console.log("trigger notifiers");
             listeners.map(callback => callback(event));
           }, timeout);
         }
