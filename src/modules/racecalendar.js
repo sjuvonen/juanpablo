@@ -211,7 +211,7 @@ function timeToEvent(event) {
     if (diff.weeks() == 1) {
       display.push(" 1 week");
     } else if (diff.weeks() > 1) {
-      display.push(util.format(" %d weeks", diff.months()));
+      display.push(util.format(" %d weeks", diff.weeks()));
     }
 
     if (diff.days() == 1) {
