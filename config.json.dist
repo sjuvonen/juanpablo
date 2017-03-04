@@ -84,6 +84,10 @@
           "url": "http://www.motorsport.com/rss/category/f1/news"
         },
         {
+          "name": "f1chan.com Blog",
+          "url": "https://www.f1chan.com/feed/"
+        },
+        {
           "name": "GP247",
           "url": "http://www.grandprix247.com/feed/"
         }
