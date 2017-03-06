@@ -24,34 +24,86 @@ let BetSchema = new mongoose.Schema({
   },
 });
 
+/**
+ * Current rules are such that bet window is open on the following Monday after the race,
+ * until next qualifying session begins.
+ */
 BetSchema.statics.isBetWindowOpen = function() {
-  return this.db.model("event").findNext("qualifying").then(event => {
-    if (event) {
-      let min = moment(event.start).startOf("isoweek");
-      if (min.isBefore()) {
-        return Promise.resolve(event.start);
-      } else {
-        let date = min.format("MMMM D, HH:mm UTC");
-        let message = util.format("Bets will be allowed after %s, until qualifying!", date);
-        throw new Error(message);
+  let storage = this.db.model("event");
+  let is_season_first = true;
+  return storage.findPrevious("race")
+    .then(event => {
+      // Assert that last GP weekend has finished.
+      if (event) {
+        is_season_first = (event.start.getFullYear() != (new Date).getFullYear());
+        let min = moment(event.start).add(7, "days").startOf("isoweek");
+        if (min.isAfter()) {
+          let date = min.format("MMMM D, HH:mm UTC");
+          let message = util.format("Bets will be allowed after %s, until qualifying!", date);
+          throw new Error(message);
+        }
       }
-    } else {
-      throw new Error("Bets are not allowed");
-    }
-  });
+    })
+    .then(() => storage.findNext())
+    .then(event => {
+      console.log("NEXT", event);
+      // Assert that the quali for the next race has not finished.
+      if (event) {
+        if (event.type == "race") {
+          let min = moment(event.start).add(7, "days").startOf("isoweek");
+          let date = min.format("MMMM D, HH:mm UTC");
+          let message = util.format("Bets will be allowed after %s, until qualifying!", date);
+          throw new Error(message);
+        } else if (is_season_first) {
+          let min = moment(event.start).subtract(7, "days").startOf("isoweek");
+          if (min.isAfter()) {
+            let date = min.format("MMMM D, HH:mm UTC");
+            let message = util.format("Bets will be allowed after %s, until qualifying!", date);
+            throw new Error(message);
+          }
+        }
+      } else {
+        throw new Error("Bets are not allowed");
+      }
+    });
+
+  // return this.db.model("event").findNext("qualifying").then(event => {
+  //   if (event) {
+  //     let min = moment(event.start).startOf("isoweek");
+  //     if (min.isBefore()) {
+  //       return Promise.resolve(event.start);
+  //     } else {
+  //       let date = min.format("MMMM D, HH:mm UTC");
+  //       let message = util.format("Bets will be allowed after %s, until qualifying!", date);
+  //       throw new Error(message);
+  //     }
+  //   } else {
+  //     throw new Error("Bets are not allowed");
+  //   }
+  // });
 };
 
 BetSchema.statics.activeBetRound = function() {
-  let max_date = moment().utc().isoWeekday(7).hour(23).minute(59).toDate();
-  let season = max_date.getFullYear();
-  return this.db.model("event").findOne({season: season, start: {$lte: max_date}}).sort("-start")
-    .then(event => {
-      if (event) {
-        return event;
-      } else {
-        throw new Error("No active round found");
-      }
-    });
+  return this.db.model("event").findNext().then(event => {
+    if (event && event.type != "race") {
+      return event;
+    } else {
+      throw new Error("No active round found");
+    }
+  });
+
+
+
+  // let max_date = moment().utc().isoWeekday(7).hour(23).minute(59).toDate();
+  // let season = max_date.getFullYear();
+  // return this.db.model("event").findOne({season: season, start: {$lte: max_date}}).sort("-start")
+  //   .then(event => {
+  //     if (event) {
+  //       return event;
+  //     } else {
+  //       throw new Error("No active round found");
+  //     }
+  //   });
 };
 
 BetSchema.statics.userBets = function(nick, round) {
