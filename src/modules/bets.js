@@ -46,7 +46,6 @@ BetSchema.statics.isBetWindowOpen = function() {
     })
     .then(() => storage.findNext())
     .then(event => {
-      console.log("NEXT", event);
       // Assert that the quali for the next race has not finished.
       if (event) {
         if (event.type == "race") {
