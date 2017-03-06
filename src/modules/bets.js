@@ -66,21 +66,6 @@ BetSchema.statics.isBetWindowOpen = function() {
         throw new Error("Bets are not allowed");
       }
     });
-
-  // return this.db.model("event").findNext("qualifying").then(event => {
-  //   if (event) {
-  //     let min = moment(event.start).startOf("isoweek");
-  //     if (min.isBefore()) {
-  //       return Promise.resolve(event.start);
-  //     } else {
-  //       let date = min.format("MMMM D, HH:mm UTC");
-  //       let message = util.format("Bets will be allowed after %s, until qualifying!", date);
-  //       throw new Error(message);
-  //     }
-  //   } else {
-  //     throw new Error("Bets are not allowed");
-  //   }
-  // });
 };
 
 BetSchema.statics.activeBetRound = function() {
@@ -91,19 +76,6 @@ BetSchema.statics.activeBetRound = function() {
       throw new Error("No active round found");
     }
   });
-
-
-
-  // let max_date = moment().utc().isoWeekday(7).hour(23).minute(59).toDate();
-  // let season = max_date.getFullYear();
-  // return this.db.model("event").findOne({season: season, start: {$lte: max_date}}).sort("-start")
-  //   .then(event => {
-  //     if (event) {
-  //       return event;
-  //     } else {
-  //       throw new Error("No active round found");
-  //     }
-  //   });
 };
 
 BetSchema.statics.userBets = function(nick, round) {
