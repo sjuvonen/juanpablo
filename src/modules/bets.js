@@ -3,7 +3,6 @@
 let moment = require("moment");
 let mongoose = require("mongoose");
 let util = require("util");
-let collection = require("../collection");
 
 let BetSchema = new mongoose.Schema({
   season: Number,
@@ -66,7 +65,7 @@ BetSchema.statics.ensureActiveUsersHaveBets = function() {
     let bets = result.bets.filter(bet => (bet.round < max_round));
     let Bet = this.model("bet");
 
-    return collection.mapWait(bets, bet => {
+    return Promise.all(bets.map(bet => {
       let data = {
         fallback: true,
         round: max_round,
@@ -76,7 +75,7 @@ BetSchema.statics.ensureActiveUsersHaveBets = function() {
         bets: bet.bets,
       }
       return (new Bet(data)).save();
-    });
+    }));
   });
 };
 
