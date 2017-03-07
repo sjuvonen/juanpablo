@@ -30,7 +30,6 @@ let BetSchema = new mongoose.Schema({
  */
 BetSchema.statics.activeUserBets = function() {
   let season = (new Date).getFullYear();
-  season = 2016;
   let round = null;
   return this.latestRound(season)
     .then(entry => {
