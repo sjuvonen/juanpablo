@@ -3,14 +3,13 @@
 let moment = require("moment");
 let mongoose = require("mongoose");
 let util = require("util");
+let collection = require("../collection");
 
 let BetSchema = new mongoose.Schema({
-  account: String,
-  nick: String,
   season: Number,
   round: Number,
-  points: Number,
-  maximum: Boolean,
+  account: String,
+  nick: String,
   bets: [{
     _id: false,
     firstName: String,
@@ -22,7 +21,64 @@ let BetSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  points: Number,
+  maximum: Boolean,
+  fallback: Boolean,
 });
+
+/**
+ * Find latest bets for each user that has placed bets during current season.
+ */
+BetSchema.statics.activeUserBets = function() {
+  let season = (new Date).getFullYear();
+  season = 2016;
+  let round = null;
+  return this.latestRound(season)
+    .then(entry => {
+      round = entry.round;
+
+      return [
+        {$match: {season: season}},
+        {$sort: {round: -1}},
+        {$group: {
+          _id: "$account",
+          account: {$first: "$account"},
+          nick: {$first: "$nick"},
+          bets: {$first: "$bets"},
+          round: {$first: "$round"},
+          season: {$first: "$season"}
+        }}
+      ];
+    })
+    .then(query => new Promise((resolve, reject) => this.aggregate(query, (error, result) => {
+      error ? reject(error) : resolve(result);
+    })))
+    .then(result => ({
+      season: season,
+      round: round,
+      bets: result,
+    }));
+};
+
+BetSchema.statics.ensureActiveUsersHaveBets = function() {
+  return this.activeUserBets().then(result => {
+    let max_round = result.round;
+    let bets = result.bets.filter(bet => (bet.round < max_round));
+    let Bet = this.model("bet");
+
+    return collection.mapWait(bets, bet => {
+      let data = {
+        fallback: true,
+        round: max_round,
+        season: bet.season,
+        account: bet.account,
+        nick: bet.nick,
+        bets: bet.bets,
+      }
+      return (new Bet(data)).save();
+    });
+  });
+};
 
 /**
  * Current rules are such that bet window is open on the following Monday after the race,
@@ -109,16 +165,16 @@ BetSchema.statics.setUserBets = function(account, round, names) {
 };
 
 BetSchema.statics.latestRound = function(season) {
-  let query = {points: {$exists: true}};
+  let query = {results: {$exists: true}};
 
   if (season) {
     query.season = season;
   }
 
-  return this.findOne(query)
+  return this.model("event").findOne(query)
     .sort({season: -1, round: -1})
-    .then(bet => bet || Promise.reject(new Error("No points data")))
-    .then(bet => ({season: bet.season, round: bet.round}));
+    .then(event => event || Promise.reject(new Error("No event data")))
+    .then(event => ({season: event.season, round: event.round}));
 };
 
 BetSchema.statics.pointsForRound = function(round) {
@@ -291,7 +347,8 @@ exports.configure = services => {
     let query = {season: event.event.season, round: event.event.round};
     let results = event.event.results;
 
-    Bet.find(query)
+    Bet.ensureActiveUsersHaveBets()
+      .then(() => Bet.find(query))
       .then(bets => Promise.all(bets.map(bet => (new PointsCalculator(results)).process(bet))))
       .then(bets => Promise.all(bets.map(bet => bet.save())))
       .then(bets => {
