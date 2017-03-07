@@ -122,5 +122,7 @@ exports.configure = services => {
 
   services.get("event.manager").on("message", message => pagetitle.handleMessage(message.content).then(title => {
     message.reply("> " + title);
+  }, error => {
+    // pass
   }));
 };
