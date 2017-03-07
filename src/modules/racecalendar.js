@@ -5,8 +5,8 @@ let mongoose = require("mongoose");
 let util = require("util");
 
 let EventSchema = new mongoose.Schema({
-  round: Number,
   season: Number,
+  round: Number,
   name: String,
   start: Date,
   end: Date,
