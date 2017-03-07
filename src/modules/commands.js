@@ -120,7 +120,7 @@ class CommandManager {
             }
             resolve(context);
           }).catch(error => {
-            reject(Error("You need admin permissions to use this command"));
+            reject(new Error("You need admin permissions to use this command"));
           });
 
         case Command.ALLOW_WHITELIST:
@@ -131,9 +131,9 @@ class CommandManager {
             } else if (this.config.admins.indexOf(account.account.toLowerCase()) != -1) {
               return resolve(context);
             }
-            reject();
+            reject(new Error("You are not whitelisted"));
           }).catch(error => {
-            reject(Error("You are not allowed to use this command"));
+            reject(new Error("You are not allowed to use this command"));
           });
 
         default:
