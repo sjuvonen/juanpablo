@@ -1,6 +1,6 @@
 "use strict";
 
-let events = require("colibre/src/events");
+let events = require("colibre-events");
 let util = require("util");
 let mapWait = require("../collection").mapWait;
 
@@ -68,12 +68,84 @@ class Context {
   }
 }
 
+class BlacklistMatcher {
+  constructor(rules) {
+    this.rules = rules;
+  }
+
+  add(user) {
+    let nick = user.nick.toLowerCase();
+
+    if (this.rules.nick.indexOf(nick) == -1) {
+      this.rules.nick.push(nick);
+    }
+
+    if (user.account && this.rules.auth.indexOf(user.account) == -1) {
+      this.rules.auth.push(user.account);
+    }
+
+    if (this.rules.host.indexOf(user.host) == -1) {
+      this.rules.host.push(user.host);
+    }
+  }
+
+  delete(user) {
+    for (let i = this.rules.nick.length - 1; i >= 0; i--) {
+      if (this.rules.nick[i] == user.nick.toLowerCase()) {
+        this.rules.nick.splice(i, 1);
+      }
+    }
+
+    for (let i = this.rules.host.length - 1; i >= 0; i--) {
+      if (this.rules.host[i] == user.host) {
+        this.rules.host.splice(i, 1);
+      }
+    }
+
+    if (user.account) {
+      for (let i = this.rules.auth.length - 1; i >= 0; i--) {
+        if (this.rules.auth[i] == user.account) {
+          this.rules.auth.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  test(user) {
+    return this.byNick(user.nick)
+      .then(() => this.byHost(user.host))
+      .then(() => this.byAuth(user.account));
+  }
+
+  byNick(nick) {
+    if (this.rules.nick.indexOf(nick.toLowerCase()) != -1) {
+      return Promise.reject(new Error("Nick name blacklisted"));
+    }
+    return Promise.resolve();
+  }
+
+  byAuth(auth) {
+    if (auth && this.rules.auth.indexOf(auth.toLowerCase()) != -1) {
+      return Promise.reject(new Error("Account blacklisted"));
+    }
+    return Promise.resolve();
+  }
+
+  byHost(host) {
+    if (this.rules.host.indexOf(host) != -1) {
+      return Promise.reject(new Error("User blacklisted"));
+    }
+    return Promise.resolve();
+  }
+}
+
 class CommandManager {
   constructor(whois, config) {
     this.whois = whois;
     this.config = config;
     this.commands = new Map;
     this.events = new events.AsyncEventManager;
+    this.blacklist = new BlacklistMatcher(this.config.blacklist);
   }
 
   add(name, ...args) {
@@ -98,12 +170,13 @@ class CommandManager {
 
   execute(command_id, data) {
     return this.access(command_id, data.nick)
+      .then(context => this.isNotBlacklisted(command_id, data.nick).then(() => context))
       .then(context => mapWait(context.validators, callback => callback(data.nick, ...data.params)).then(() => context))
       .then(context => context.callback(data));
   }
 
   access(command_id, nick) {
-    return new Promise((resolve, reject) => {
+    return (new Promise((resolve, reject) => {
       let context = this.get(command_id);
 
       switch (context.permissions) {
@@ -139,7 +212,11 @@ class CommandManager {
         default:
           return reject(new Error("Invalid command permissions"));
       }
-    });
+    }));
+  }
+
+  isNotBlacklisted(command, nick) {
+    return this.whois.whois(nick).then(user => this.blacklist.test(user));
   }
 }
 
@@ -151,6 +228,11 @@ exports.configure = services => {
     }
   });
 
+  services.registerFactory("command.blacklist", () => {
+    let config = services.get("config").get("modules.commands.blacklist");
+    return new BlacklistMatcher(config);
+  });
+
   services.registerFactory("command.manager", () => {
     let whois = services.get("whois");
     let config = services.get("config").get("modules.commands");
@@ -160,5 +242,25 @@ exports.configure = services => {
   services.get("event.manager").on("command", command => {
     return services.get("command.manager").execute(command.command, command)
       .then(result => command.send(result), error => command.send(error.toString()));
+  });
+
+  services.get("command.manager").add("bl", (command) => {
+    let blacklist = services.get("command.blacklist");
+    let whois = services.get("whois");
+
+    return whois.whois(command.params[0]).then(user => {
+      blacklist.add(user);
+      return util.format("User %s blacklisted", user.nick);
+    });
+  });
+
+  services.get("command.manager").add("unbl", (command) => {
+    let blacklist = services.get("command.blacklist");
+    let whois = services.get("whois");
+
+    return whois.whois(command.params[0]).then(user => {
+      blacklist.delete(user);
+      return util.format("User %s removed from blacklist", user.nick);
+    });
   });
 };

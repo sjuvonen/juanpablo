@@ -1,6 +1,6 @@
 "use strict";
 
-let events = require("colibre/src/events");
+let events = require("colibre-events");
 let moment = require("moment");
 let util = require("util");
 let AgingCache = require("../collection").AgingCache;

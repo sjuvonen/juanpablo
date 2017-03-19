@@ -1,10 +1,10 @@
 "use strict";
 
-let events = require("colibre/src/events");
+let events = require("colibre-events");
 let datatree = require("colibre/src/util/datatree");
 let irc = require("irc");
 let util = require("util");
-let ModuleManager = require("colibre/src/module-manager").ModuleManager;
+let ModuleManager = require("colibre-module-manager").ModuleManager;
 let ServiceManager = require("colibre/src/service-manager").ServiceManager;
 let AgingCache = require("./collection").AgingCache;
 
@@ -45,7 +45,7 @@ class Bot {
     this.connections = new Map;
     this.config = new Config(config);
     this.events = new events.AsyncEventManager;
-    this.sharedEvents = new events.SharedEventManager(true);
+    this.sharedEvents = new events.SharedEventManager(new events.AsyncEventManager);
     this.services = new ServiceManager;
     // this.modules = new ModuleManager(this.services);
 
@@ -382,7 +382,7 @@ class Whois {
       if (this.cache.has(cache_key)) {
         return resolve(this.cache.get(cache_key));
       }
-      this.connection.client.whois(nick, info => {
+      this.connection.client.whois(nick, (info, ...args) => {
         this.cache.set(nick.toLowerCase(), info);
         resolve(info);
       });

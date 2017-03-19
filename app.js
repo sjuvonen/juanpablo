@@ -12,6 +12,10 @@ let config = require("./config");
 let bot = require("./src/bot");
 let app = bot(config);
 
+process.on("unhandledRejection", (reason, promise) => {
+  console.log("UNHANDLED REJECTION", reason);
+});
+
 app.start().then(() => {
   console.log("Bot started...");
 }, error => {

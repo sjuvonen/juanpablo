@@ -1,7 +1,7 @@
 "use strict";
 
 let express = require("express");
-let AsyncEventManager = require("colibre/src/events").AsyncEventManager;
+let AsyncEventManager = require("colibre-events").AsyncEventManager;
 let Router = require("colibre/src/router").Router;
 
 /**
