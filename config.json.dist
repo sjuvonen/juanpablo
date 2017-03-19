@@ -37,6 +37,11 @@
     ],
     "commands": {
       "admins": ["demo"],
+      "blacklist": {
+        "nick": [],
+        "auth": [],
+        "host": []
+      },
       "whitelist": [
         {
           "demo": ["poll"]
