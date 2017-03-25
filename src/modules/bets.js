@@ -123,7 +123,8 @@ BetSchema.statics.isBetWindowOpen = function() {
 
 BetSchema.statics.activeBetRound = function() {
   return this.db.model("event").findNext().then(event => {
-    if (event && event.type != "race") {
+    // if (event && event.type != "race") {
+    if (event) {
       return event;
     } else {
       throw new Error("No active round found");
