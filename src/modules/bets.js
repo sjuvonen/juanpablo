@@ -218,6 +218,9 @@ BetSchema.statics.pointsForSeason = function(season) {
     }));
 }
 
+/**
+ * @deprecated
+ */
 class PointsCalculator {
   constructor(results) {
     this.results = results;
@@ -260,6 +263,59 @@ class PointsCalculator {
 
   driverOnPodium(driver) {
     return this.results.slice(0, 3).map(d => d.code).indexOf(driver.code) != -1;
+  }
+}
+
+class PointsCalculatorV2 {
+  constructor(results) {
+    this.results = results;
+    this.scoring = [10, 7, 5, 3, 1];
+    this.bonus = 5;
+  }
+
+  process(bet) {
+    return new Promise((resolve, reject) => {
+      bet.points = this.scores(bet);
+      resolve(bet);
+    });
+  }
+
+  scores(bet) {
+    let total_points = 0;
+    let total_delta = 0;
+
+    for (let i = 0; i < bet.bets.length; i++) {
+      let driver = bet.bets[i];
+      let delta = this.delta(bet.bets, i);
+
+      if (delta == 0) {
+        driver.points = this.scoring[i];
+      } else if (delta <= 2) {
+        driver.points = this.scoring[2 + delta];
+      } else {
+        driver.points = 0;
+      }
+
+      total_delta += delta;
+      total_points += driver.points;
+    }
+
+    if (total_delta == 0) {
+      total_points += this.bonus;
+      bet.maximum = true;
+    } else {
+      bet.maximum = false;
+    }
+
+    return total_points;
+  }
+
+  delta(bets, i) {
+    let pos = this.results.findIndex(driver => {
+      return driver.code == bets[i].code;
+    });
+
+    return pos == -1 ? 99 : Math.abs(i - pos);
   }
 }
 
@@ -347,7 +403,7 @@ exports.configure = services => {
 
     Bet.ensureActiveUsersHaveBets()
       .then(() => Bet.find(query))
-      .then(bets => Promise.all(bets.map(bet => (new PointsCalculator(results)).process(bet))))
+      .then(bets => Promise.all(bets.map(bet => (new PointsCalculatorV2(results)).process(bet))))
       .then(bets => Promise.all(bets.map(bet => bet.save())))
       .then(bets => {
         if (bets.length) {
