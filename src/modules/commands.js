@@ -73,6 +73,10 @@ class BlacklistMatcher {
     this.rules = rules;
   }
 
+  get empty() {
+    return this.rules.auth.length == 0;
+  }
+
   add(user) {
     let nick = user.nick.toLowerCase();
 
@@ -112,6 +116,10 @@ class BlacklistMatcher {
   }
 
   test(user) {
+    if (this.empty) {
+      return Promise.resolve();
+    }
+    
     return this.byNick(user.nick)
       .then(() => this.byHost(user.host))
       .then(() => this.byAuth(user.account));
