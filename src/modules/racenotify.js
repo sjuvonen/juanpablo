@@ -110,7 +110,11 @@ class EventNotifier {
     this.listeners = new Listeners;
     this.interval = 1000 * 60 * 5;
     this.timer = null;
-    this.start();
+    // this.start();
+  }
+
+  get running() {
+    return this.timer != null;
   }
 
   /**
@@ -124,14 +128,19 @@ class EventNotifier {
       callback = time;
       time = 0;
     }
+
     this.listeners.add(event_type, time, callback);
+
+    if (!this.running) {
+      this.start();
+    }
   }
 
   start() {
     if (this.timer) {
       throw new Error("EventNotifier is already running");
     }
-    this.timer = setInterval(() => this.test, this.interval);
+    this.timer = setInterval(() => this.test(), this.interval);
   }
 
   test() {
