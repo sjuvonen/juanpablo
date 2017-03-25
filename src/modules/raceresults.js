@@ -91,27 +91,45 @@ exports.configure = services => {
     Event.find(query)
       .sort("-round")
       .then(races => races.map(race => {
-        let watchers = services.get("raceresults.watchers");
-        let wid = util.format("%d:%d", race.season, race.round);
-        if (!watchers.has(wid)) {
-          let watcher = new ErgastWatcher(race.season, race.round);
-          watchers.set(wid, watcher);
-          watcher.watch()
-            .then(results => {
-              Event.updateResults({season: race.season, round: race.round, type: "race"}, results);
 
-              Season.findOne({_id: race.season}).then(season => {
-                season.drivers = results;
-                season.save();
-              });
-            })
-            .then(() => watchers.delete(wid))
-            .then(() => console.log("Updated result for round", race.round))
-            .catch(error => {
-              console.log(util.format("Updating results %d/%d failed:", race.round, race.season), error.stack);
+        let watcher = new ErgastWatcher(race.season, race.round);
+
+        watcher.fetch()
+          .then(results => {
+            Season.findOne({_id: race.season}).then(season => {
+              season.drivers = results;
+              season.save();
             });
 
-        }
+            return Event.updateResults({season: race.season, round: race.round, type: "race"}, results);
+          })
+          .then(() => console.log("Updated result for round", race.round))
+          .catch(error => {
+            console.log(util.format("Updating results %d/%d failed:", race.round, race.season), error.stack);
+          });
+
+
+        // let watchers = services.get("raceresults.watchers");
+        // let wid = util.format("%d:%d", race.season, race.round);
+        // if (!watchers.has(wid)) {
+        //   let watcher = new ErgastWatcher(race.season, race.round);
+        //   watchers.set(wid, watcher);
+        //   watcher.watch()
+        //     .then(results => {
+        //       Event.updateResults({season: race.season, round: race.round, type: "race"}, results);
+        //
+        //       Season.findOne({_id: race.season}).then(season => {
+        //         season.drivers = results;
+        //         season.save();
+        //       });
+        //     })
+        //     .then(() => watchers.delete(wid))
+        //     .then(() => console.log("Updated result for round", race.round))
+        //     .catch(error => {
+        //       console.log(util.format("Updating results %d/%d failed:", race.round, race.season), error.stack);
+        //     });
+        //
+        // }
       })).catch(error => {
         console.log("raceresults.watch:", error.stack);
       });
