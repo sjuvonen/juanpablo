@@ -1,12 +1,13 @@
 {
   "name": "juanpablo",
   "description": "IRC bot with an interest towards Formula 1",
-  "version": "2.0.0",
+  "version": "3.0.0-alpha",
   "license": "MIT",
   "private": true,
   "main": "src/bot",
   "dependencies": {
     "colibre": "https://github.com/sjuvonen/colibre.git#requirejs",
+    "colibre-pgsql": "git+ssh://git@juvonet.fi:colibre-pgsql.git",
     "entities": "^1.1.1",
     "feedparser": "^1.1.4",
     "htmlparser2": "^3.8.3",
