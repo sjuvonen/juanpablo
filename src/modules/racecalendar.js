@@ -78,7 +78,7 @@ EventSchema.statics.latestResult = function() {
 
 EventSchema.statics.standings = function() {
   let Season = this.db.model("season");
-  return this.find({type: "race", results: {$ne: []}}).sort({season: -1, round: -1}).limit(30)
+  return this.find({type: "race", results: {$exists: true}}).sort({season: -1, round: -1}).limit(30)
     .then(races => {
       let standings = {
         last: null,
