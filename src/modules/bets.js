@@ -164,11 +164,10 @@ BetSchema.statics.setUserBets = function(account, round, names) {
 };
 
 BetSchema.statics.latestRound = function(season) {
-  let query = {results: {$exists: true}};
-
-  if (season) {
-    query.season = season;
-  }
+  let query = {
+    results: {$exists: true},
+    season: season || (new Date).getFullYear(),
+  };
 
   return this.model("event").findOne(query)
     .sort({season: -1, round: -1})
@@ -376,7 +375,7 @@ exports.configure = services => {
   })
   .validate(() => {
     return Bet.activeBetRound().then(event => {
-      // console.log("GOT EVENT", event);
+      console.log("GOT EVENT", event);
       this.activeEvent = event;
     });
   });
