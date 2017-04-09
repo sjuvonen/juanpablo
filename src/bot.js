@@ -132,6 +132,7 @@ class Connection {
     this.services.register("connection", this);
     this.services.register("config", this.config);
     this.services.register("event.manager", this.events);
+    this.services.register("module.manager", this.modules);
 
     this.services.registerFactory("whois", () => new Whois(this));
   }
@@ -139,6 +140,8 @@ class Connection {
   open() {
     return new Promise((resolve, reject) => {
       this.modules.discover("./modules", this.config.get("modules.enabled", [])).then(() => {
+        this.events.emit("ready");
+        
         this.client.connect(5, raw => {
           let data = {server: raw.server, nick: raw[0]};
           this.events.emit("connect", data);
