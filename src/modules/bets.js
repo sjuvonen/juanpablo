@@ -375,7 +375,7 @@ exports.configure = services => {
   })
   .validate(() => {
     return Bet.activeBetRound().then(event => {
-      console.log("GOT EVENT", event);
+      // console.log("GOT EVENT", event);
       this.activeEvent = event;
     });
   });
