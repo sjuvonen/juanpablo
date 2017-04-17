@@ -133,4 +133,59 @@ exports.entities = {
 };
 
 exports.configure = services => {
+  const entities = services.get("entity.manager");
+
+  services.get("command.manager").add("next", (type) => {
+    return entities.storage("gp_weekend").findNextEvent(type).then(event => {
+      if (!event) {
+        throw new Exception("No event data found");
+      }
+
+      let session = event.sessions.nextSession();
+      let title = [session.name, event.title].join(", ");
+
+      let date = moment.utc(session.starts);
+      let diff = moment.duration(date.diff());
+      let timestamp = date.format("MMMM D, HH:mm UTC");
+      let display = [title + ": ", timestamp];
+
+      if (diff.days() > 0 || diff.hours() > 0 || diff.minutes() > 0) {
+        display.push(" (in");
+
+        if (diff.months() == 1) {
+          display.push(" 1 month");
+        } else if (diff.months() > 1) {
+          display.push(util.format(" %d months", diff.months()));
+        }
+
+        if (diff.weeks() == 1) {
+          display.push(" 1 week");
+        } else if (diff.weeks() > 1) {
+          display.push(util.format(" %d weeks", diff.weeks()));
+        }
+
+        if (diff.days() == 1) {
+          display.push(" 1 day");
+        } else if (diff.days() > 1) {
+          display.push(util.format(" %d days", diff.days() % 7));
+        }
+
+        if (diff.hours() == 1) {
+          display.push(" 1 hour");
+        } else if (diff.hours() > 1) {
+          display.push(util.format(" %d hours", diff.hours()));
+        }
+
+        if (diff.minutes() == 1) {
+          display.push(" 1 minute");
+        } else if (diff.minutes() > 1) {
+          display.push(util.format(" %d minutes", diff.minutes()));
+        }
+
+        display.push(")");
+      }
+
+      return display.join("");
+    });
+  });
 };
