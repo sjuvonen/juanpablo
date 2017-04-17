@@ -116,7 +116,6 @@ class SessionArray extends Array {
     const now = new Date;
 
     for (let session of this) {
-      console.log("D", session.starts);
       if (now < session.starts) {
         return session;
       }
