@@ -25,6 +25,10 @@ class Command {
     return this.message.nick;
   }
 
+  get host() {
+    return this.message.host;
+  }
+
   get channel() {
     return this.message.channel;
   }
