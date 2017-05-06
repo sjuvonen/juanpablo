@@ -4,6 +4,10 @@ let events = require("colibre-events");
 let util = require("util");
 let mapWait = require("../collection").mapWait;
 
+class BlacklistError extends Error {
+
+}
+
 class Command {
   static isCommand(message) {
     return message.length >= 2 && message.message[0] == "!" && message.message[1] != "!";
@@ -73,8 +77,12 @@ class BlacklistMatcher {
     this.rules = rules;
   }
 
+  get silent() {
+    return this.rules.silent == true;
+  }
+
   get empty() {
-    return this.rules.auth.length == 0;
+    return this.rules.nick.length == 0;
   }
 
   add(user) {
@@ -119,29 +127,38 @@ class BlacklistMatcher {
     if (this.empty) {
       return Promise.resolve();
     }
-    
-    return this.byNick(user.nick)
-      .then(() => this.byHost(user.host))
-      .then(() => this.byAuth(user.account));
+
+    return new Promise((resolve, reject) => {
+      this.byNick(user.nick)
+        .then(() => this.byHost(user.host))
+        .then(() => this.byAuth(user.account))
+        .then(resolve, error => {
+          if (!(this.silent && error instanceof BlacklistError)) {
+            reject(error);
+          } else {
+            // console.log("blacklisted, ignore");
+          }
+        });
+    })
   }
 
   byNick(nick) {
     if (this.rules.nick.indexOf(nick.toLowerCase()) != -1) {
-      return Promise.reject(new Error("Nick name blacklisted"));
+      return Promise.reject(new BlacklistError("Nick name blacklisted"));
     }
     return Promise.resolve();
   }
 
   byAuth(auth) {
     if (auth && this.rules.auth.indexOf(auth.toLowerCase()) != -1) {
-      return Promise.reject(new Error("Account blacklisted"));
+      return Promise.reject(new BlacklistError("Account blacklisted"));
     }
     return Promise.resolve();
   }
 
   byHost(host) {
     if (this.rules.host.indexOf(host) != -1) {
-      return Promise.reject(new Error("User blacklisted"));
+      return Promise.reject(new BlacklistError("User blacklisted"));
     }
     return Promise.resolve();
   }
@@ -178,7 +195,7 @@ class CommandManager {
 
   execute(command_id, data) {
     return this.access(command_id, data.nick)
-      .then(context => this.isNotBlacklisted(command_id, data.nick).then(() => context))
+      .then(context => this.isNotBlacklisted(command_id, data).then(() => context))
       .then(context => mapWait(context.validators, callback => callback(data.nick, ...data.params)).then(() => context))
       .then(context => context.callback(data));
   }
@@ -223,8 +240,9 @@ class CommandManager {
     }));
   }
 
-  isNotBlacklisted(command, nick) {
-    return this.whois.whois(nick).then(user => this.blacklist.test(user));
+  isNotBlacklisted(command, user) {
+    return this.blacklist.test(user);
+    // return this.whois.whois(nick).then(user => this.blacklist.test(user));
   }
 }
 
